@@ -7,13 +7,13 @@ class EmptyGitReposManager
 
   def compute_override env
     if @cap.exists? :master_chef_version
-      return {"http://github.com/octo-technology/master-chef.git" => @cap.master_chef_version}
+      return {"http://github.com/kitchenware/master-chef.git" => @cap.master_chef_version}
     end
     nil
   end
 
   def list
-    ["http://github.com/octo-technology/master-chef.git"]
+    ["http://github.com/kitchenware/master-chef.git"]
   end
 
   def compute_local_path

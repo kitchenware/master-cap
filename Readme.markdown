@@ -1,6 +1,6 @@
 # What is it ?
 
-Here are [capistrano](https://github.com/capistrano/capistrano/wiki) extensions to be used with [master-chef](https://github.com/octo-technology/master-chef)
+Here are [capistrano](https://github.com/capistrano/capistrano/wiki) extensions to be used with [master-chef](https://github.com/kitchenware/master-chef)
 
 # How to use it
 
@@ -64,7 +64,7 @@ set :git_repos_manager_class, 'SimpleGitReposManager'
 
 set :git_repos, [
   {
-    :url => "http://github.com/octo-technology/master-chef.git",
+    :url => "http://github.com/kitchenware/master-chef.git",
     :ref => "aa597911b6d394dff27338c825aa966105cb6607",
   },
   {

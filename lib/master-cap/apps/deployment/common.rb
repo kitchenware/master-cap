@@ -8,8 +8,12 @@ Capistrano::Configuration.instance.load do
   set :use_sudo, false
   set :ssh_options, { :forward_agent => true }
 
-  JSON.parse(File.read(ENV['TOPOLOGY'])).each do |server_name, roles|
-    server server_name, *roles
+  JSON.parse(File.read(ENV['TOPOLOGY'])).each do |server_name, config|
+    if config["no_release"]
+      server server_name, *config["roles"], :no_release => true
+    else
+      server server_name, *config["roles"]
+    end
   end
 
   def env_http_proxy

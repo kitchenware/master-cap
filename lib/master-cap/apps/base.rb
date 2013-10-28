@@ -15,14 +15,17 @@ class AppsBase
   end
 
   def get_topology(map)
-    list = Hash.new { |hash, key| hash[key] = [] }
+    list = Hash.new { |hash, key| hash[key] = {}; hash[key][:roles] = []; }
     map.each do |role, mapped_roles|
       cap.find_servers(:roles => role).each do |n|
+        no_release = false
         mapped_roles.each do |r|
           unless list[n].include? r
-            list[n] << r
+            list[n][:roles] << r
+            no_release = true if config[:no_release_roles] && config[:no_release_roles].include?(r)
           end
         end
+        list[n][:no_release] = true if no_release
       end
     end
     list

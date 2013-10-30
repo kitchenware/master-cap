@@ -1,41 +1,68 @@
 
 class BaseDns
 
-  def full_name name, record
-    "#{record[:name]}.#{name}"
+  def process_list list
+    compute_zone(list.uniq{|x| "#{x[:ip]}_#{x[:dns]}"}.map{|x| {:ip => x[:ip], :name => x[:dns]}})
   end
 
-  def sync name, records, purge, no_dry
-    current = read_current_records name
-    modified = false
-    start_diff current
-    records.sort_by{|x| x[:ip]}.each do |x|
-      same = current.find{|z| z[:full_name] == full_name(name, x) || z[:name] == x[:name]}
-      if same
-        if x[:ip] != same[:ip]
-          puts "Replacing #{full_name(name, x)} by #{x[:ip]}"
-          delete_record name, full_name(name, x), x if no_dry
-          add_record name, full_name(name, x), x if no_dry
-          modified = true
-        end
-      else
-        puts "Adding record #{full_name(name, x)} : #{x[:ip]}"
-        add_record name, full_name(name, x), x if no_dry
-        modified = true
-      end
+  def compute_zone list
+    list.map do |x|
+      raise "Unable to parse #{l[dns]}" unless x[:name].match(/^([^\.]+)\.(.*)$/)
+      x[:hostname], x[:zone] = $1, $2
+      x
     end
-    if purge
-      current.each do |z|
-        current_full_name = z[:full_name] || full_name(name, z)
-        unless records.find{|x| current_full_name == full_name(name, x) || z[:name] == x[:name]}
-          puts "Deleting record #{current_full_name} : #{z[:ip]}"
-          delete_record name, current_full_name, z if no_dry
-          modified = true
-        end
-      end
-    end
-    end_diff
-    reload name if modified && no_dry
-    puts "Zone #{name} synced"
   end
+
+  def by_zone list
+    zones = {}
+    list.each do |x|
+      zones[x[:zone]] = [] unless zones[x[:zone]]
+      zones[x[:zone]] << x
+    end
+    zones
+  end
+
+  def get_zone_name zone_name
+    zone_name
+  end
+
+  def run list, no_dry
+    list = process_list(list)
+    by_zone(list).each do |zone, l|
+      real_zone_name = get_zone_name(zone)
+      current = read_current_records real_zone_name
+      modified = yield real_zone_name, current, l
+      reload zone if modified && no_dry
+      puts "Zone #{zone} updated"
+    end
+  end
+
+  def ensure_exists list, no_dry
+    run list, no_dry do |real_zone_name, current, l|
+      modified = false
+      l.each do |x|
+        unless current.find{|xx| xx[:ip] == x[:ip] && xx[:name] == x[:name]}
+          puts "Adding record in zone #{real_zone_name} : #{x[:name]} : #{x[:ip]}"
+          add_record real_zone_name, x if no_dry
+          modified = true
+        end
+      end
+      modified
+    end
+  end
+
+  def ensure_not_exists list, no_dry
+    run list, no_dry do |real_zone_name, current, l|
+      modified = false
+      l.each do |x|
+        if current.find{|xx| xx[:ip] == x[:ip] && xx[:name] == x[:name]}
+          puts "Removing record in zone #{real_zone_name} : #{x[:name]} : #{x[:ip]}"
+          del_record real_zone_name, x if no_dry
+          modified = true
+        end
+      end
+      modified
+    end
+  end
+
 end

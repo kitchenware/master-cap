@@ -1,6 +1,6 @@
 
 require 'master-cap/dns/base_dns'
-require 'master-cap/hypervisors/ssh_helper'
+require 'master-cap/helpers/ssh_helper'
 
 class DnsDnsmasqShell < BaseDns
 
@@ -10,7 +10,7 @@ class DnsDnsmasqShell < BaseDns
     @cap = cap
     @params = params
     [:user, :host, :sudo, :hosts_path].each do |x|
-      raise "Missing params :#{x}" unless @params[x]
+      raise "Missing params :#{x}" unless @params.key? x
     end
     @ssh = SshDriver.new @params[:host], @params[:user], @params[:sudo]
   end
@@ -32,14 +32,7 @@ class DnsDnsmasqShell < BaseDns
     result
   end
 
-  def start_diff data
-    @data = data.clone
-  end
-
-  def end_diff
-  end
-
-  def add_record name, full_name, record
+  def add_record name, record
     r = {:full_name => full_name, :ip => record[:ip]}
     @data << r
   end

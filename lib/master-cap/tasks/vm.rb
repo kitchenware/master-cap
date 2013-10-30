@@ -133,7 +133,7 @@ Capistrano::Configuration.instance.load do
       return exists, not_exists
     end
 
-    def go l, clear_caches, block
+    def go l, post_clear_caches, block
       peach_with_errors(l) do |hypervisor_name, l|
         hypervisor = get_hypervisor(hypervisor_name)
         if exists? :batch_size
@@ -143,16 +143,16 @@ Capistrano::Configuration.instance.load do
         else
           block.call hypervisor, l, exists?(:no_dry)
         end
-        hypervisor.clear_caches if clear_caches
+        hypervisor.clear_caches if post_clear_caches
       end
     end
 
-    def for_all clear_caches = false, &block
+    def for_all post_clear_caches = false, &block
       exists, not_exists = list_vms
-      go exists.merge(not_exists), clear_caches, block
+      go exists.merge(not_exists), post_clear_caches, block
     end
 
-    def for_existing clear_caches = false, &block
+    def for_existing post_clear_caches = false, &block
       exists, not_exists = list_vms
 
       not_exists.each do |hypervisor, l|
@@ -161,10 +161,10 @@ Capistrano::Configuration.instance.load do
         end
       end
 
-      go exists, clear_caches, block
+      go exists, post_clear_caches, block
     end
 
-    def for_not_existing clear_caches = false, &block
+    def for_not_existing post_clear_caches = false, &block
       exists, not_exists = list_vms
 
       exists.each do |hypervisor, l|
@@ -173,7 +173,7 @@ Capistrano::Configuration.instance.load do
         end
       end
 
-      go not_exists, clear_caches, block
+      go not_exists, post_clear_caches, block
     end
 
     [:start, :stop, :reboot, :info, :console].each do |cmd|
@@ -188,7 +188,7 @@ Capistrano::Configuration.instance.load do
       for_not_existing(true) do |hyp, l, dry|
         hyp.create_vms l, exists?(:no_dry)
       end
-      top.vm.dns.update
+      top.vm.dns.add_if_vm_exist
       top.ssh_known_hosts.purge
     end
 
@@ -196,59 +196,42 @@ Capistrano::Configuration.instance.load do
       for_existing(true) do |hyp, l, dry|
         hyp.delete_vms l, exists?(:no_dry)
       end
-    end
-
-    def go_dns purge
-      env = check_only_one_env
-      return unless TOPOLOGY[env][:dns_provider]
-      dns = get_dns TOPOLOGY[env][:dns_provider]
-      list = []
-      for_existing(true) do |hyp, l, dry|
-        list += hyp.dns_ips l, false
-        list += hyp.dns_ips TOPOLOGY[env][:topology].select{|name, node| node[:type].to_sym != :linux_chef}.map{|name, node| [name.to_s, node]}, true
-      end
-      for_not_existing(true) do |hyp, l, dry|
-        list += hyp.dns_ips l, true
-      end
-      list += Hypervisor.extract_dns_ips TOPOLOGY[env][:topology].select{|name, node| node[:type].to_sym != :linux_chef}
-      zones = {}
-      list.select!{|l| l[:ip]}
-      list.each do |l|
-        raise "Unable to parse #{l[dns]}" unless l[:dns].match(/^([^\.]+)\.(.*)$/)
-        z, h = $2, $1
-        zones[z] = [] unless zones[z]
-        zones[z] << {:ip => l[:ip], :name => h}
-      end
-      zones.each do |name, ll|
-        next if exists?(:ignore_zones) && ignore_zones.include?(name)
-        uniq_map = {}
-        ll.each do |r|
-          raise "Conflict on zone #{name} on #{r[:name]} : #{r[:ip]}, #{uniq_map[r[:name]]}" if uniq_map[r[:name]] && uniq_map[r[:name]] != r[:ip]
-          uniq_map[r[:name]] = r[:ip]
-        end
-        ll = uniq_map.map{|k, v| {:name => k, :ip => v}}
-        dns.sync name, ll, purge, exists?(:no_dry)
-      end
+      top.vm.dns.remove_if_vm_not_exist
     end
 
     namespace :dns do
 
-      task :sync do
-        go_dns true
+      def get_existing env
+        list = []
+        hyps = []
+        for_existing do |hyp, l, dry|
+          list += hyp.dns_ips l, false
+          hyps << hyp unless hyps.include? hyp
+        end
+        hyps.each do |hyp|
+          list += hyp.dns_ips TOPOLOGY[env][:topology].select{|name, node| node[:type].to_sym != :linux_chef}.map{|name, node| [name.to_s, node]}, true
+        end
+        list
       end
 
-      task :update do
-        go_dns false
+      task :add_if_vm_exist do
+        env = check_only_one_env
+        return unless TOPOLOGY[env][:dns_provider]
+        dns = get_dns TOPOLOGY[env][:dns_provider]
+        dns.ensure_exists get_existing(env), exists?(:no_dry)
       end
 
-    end
+      task :remove_if_vm_not_exist do
+        env = check_only_one_env
+        return unless TOPOLOGY[env][:dns_provider]
+        dns = get_dns TOPOLOGY[env][:dns_provider]
+        list = []
+        for_not_existing do |hyp, l, dry|
+          list += hyp.dns_ips l, true
+        end
+        dns.ensure_not_exists list, exists?(:no_dry)
+      end
 
-  end
-
-  namespace :dns do
-
-    task :sync do
-      top.vm.dns.sync
     end
 
   end

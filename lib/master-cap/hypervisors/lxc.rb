@@ -1,6 +1,6 @@
 
 require 'master-cap/hypervisors/base'
-require 'master-cap/hypervisors/ssh_helper'
+require 'master-cap/helpers/ssh_helper'
 
 class HypervisorLxc < Hypervisor
 
@@ -10,7 +10,7 @@ class HypervisorLxc < Hypervisor
     super(cap, params)
     @params = params
     [:lxc_user, :lxc_host, :lxc_sudo].each do |x|
-      raise "Missing params :#{x}" unless @params[x]
+      raise "Missing params :#{x}" unless @params.key? x
     end
     @ssh = SshDriver.new @params[:lxc_host], @params[:lxc_user], @params[:lxc_sudo]
   end

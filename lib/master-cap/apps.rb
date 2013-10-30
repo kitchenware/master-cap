@@ -43,7 +43,6 @@ Capistrano::Configuration.instance.load do
 
         end
       end
-
     end
 
     task :deploy_all do

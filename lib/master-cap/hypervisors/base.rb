@@ -49,7 +49,9 @@ class Hypervisor
   def self.extract_dns_ips(vms)
     result = []
     vms.each do |name, config|
-      result << {:vm_name => name.to_s, :dns => config[:hostname], :ip => config[:ip]}
+      config[:host_ips].each do |k, v|
+        result << {:vm_name => name.to_s, :net => k, :dns => v[:hostname], :ip => v[:ip]}
+      end
     end
     result
   end

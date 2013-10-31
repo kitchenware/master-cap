@@ -12,8 +12,8 @@ class DefaultTranslationStrategy
   end
 
   def hostname name
-    return name.to_s if @topology[:no_node_suffix]
-    "#{name}-#{@env}"
+    return name.to_s if @topology[:no_vm_name_suffix]
+    capistrano_name name
   end
 
   def ip_types

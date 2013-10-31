@@ -27,6 +27,7 @@ class DefaultTranslationStrategy
   end
 
   def vm_name name
+    return name.to_s if @topology[:no_vm_name_suffix]
     capistrano_name name
   end
 

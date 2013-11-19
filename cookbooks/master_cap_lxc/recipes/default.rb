@@ -9,6 +9,11 @@ include_recipe "master_cap_lxc::ksm"
 
 package "lxc"
 
+template "/etc/default/lxc" do
+  source "lxc_default.erb"
+  variables :lxc_net => node.master_cap_lxc.lxc_net
+end
+
 template "/usr/share/lxc/templates/lxc-ubuntu-chef" do
   source "lxc-ubuntu-chef.erb"
   mode '0755'

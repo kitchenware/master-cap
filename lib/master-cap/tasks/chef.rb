@@ -13,12 +13,16 @@ Capistrano::Configuration.instance.load do
       env = check_only_one_env
       find_nodes(:roles => chef_role).each do |env, node, s|
         roles = []
-        roles += TOPOLOGY[env][:default_role_list] if TOPOLOGY[env][:default_role_list] && !node[:no_default_role]
-        roles += node[:roles] if node[:roles]
+        recipes = []
+        if exists?(:autoload_runlist) && autoload_runlist
+          roles << "master_cap_runlist_loader"
+        else
+          roles += TOPOLOGY[env][:default_role_list] if TOPOLOGY[env][:default_role_list] && !node[:no_default_role]
+          roles += node[:roles] if node[:roles]
+          recipes += node[:recipes] if node[:recipes]
+        end
         git_repos = git_repos_manager.list
         git_repos += node[:git_repos] if node[:git_repos]
-        recipes = []
-        recipes += node[:recipes] if node[:recipes]
         json = JSON.pretty_generate({
           :repos => {
             :git => git_repos,

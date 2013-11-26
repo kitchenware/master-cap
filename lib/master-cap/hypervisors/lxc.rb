@@ -43,7 +43,7 @@ class HypervisorLxc < Hypervisor
   def create_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|
-      ip_config = vm[:host_ips][:admin]
+      ip_config = vm[:host_ips][:internal_ip] || vm[:host_ips][:admin]
       template_name = vm[:vm][:template_name]
       template_opts = vm[:vm][:template_opts] || ""
       raise "No template specified for vm #{name}" unless template_name
@@ -131,7 +131,7 @@ EOF
       @ssh.exec "rm /tmp/lxc_config_#{name}"
       @ssh.exec "lxc-start -d -n #{name}"
       @ssh.exec "ln -s /var/lib/lxc/#{name}/config /etc/lxc/auto/#{name}.conf"
-      wait_ssh ip_config[:ip], user
+      wait_ssh vm[:host_ips][:admin][:ip], user
     end
   end
 

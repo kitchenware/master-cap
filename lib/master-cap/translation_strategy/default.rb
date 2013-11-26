@@ -17,12 +17,12 @@ class DefaultTranslationStrategy
   end
 
   def ip_types
-    [:admin, :user]
+    [:admin, :user, :internal]
   end
 
   def ip type, name
     node = @topology[:topology][name]
-    return {:ip => node[:ip] || node[:hostname], :hostname => node[:hostname] || node[:ip]} if node[:hostname] || node[:ip]
+    return {:ip => (type == :internal ? node[:internal_ip] || node[:ip] : node[:ip]) || node[:hostname], :hostname => node[:hostname] || node[:ip]} if node[:hostname] || node[:ip]
     raise "No hostname in #{node}"
   end
 

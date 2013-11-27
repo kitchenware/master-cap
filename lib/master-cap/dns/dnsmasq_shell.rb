@@ -26,28 +26,34 @@ class DnsDnsmasqShell < BaseDns
       splitted = line.split(/ /)
       ip = splitted.shift
       splitted.each do |x|
-        result << {:full_name => x, :ip => ip}
+        result << {:name => x, :ip => ip}
       end
     end
     result
   end
 
   def add_record name, record
-    r = {:full_name => full_name, :ip => record[:ip]}
-    @data << r
+    data = read_current_records name
+    data << {:name => record[:name], :ip => record[:ip]}
+    save name, data
   end
 
-  def delete_record name, full_name, record
-    @data.reject!{|x| x[:full_name] == full_name}
+  def del_record name, record
+    data = read_current_records name
+    data.reject!{|x| x[:name] == record[:name]}
+    save name, data
+  end
+
+  def save name, data
+    ips = data.map{|x| x[:ip]}.uniq
+    lines = []
+    ips.sort.each do |ip|
+      lines << "#{ip} #{data.select{|x| x[:ip] == ip}.map{|x| x[:name]}.join(' ')}"
+    end
+    @ssh.scp file(name), lines.join("\n")
   end
 
   def reload name
-    ips = @data.map{|x| x[:ip]}.uniq
-    lines = []
-    ips.sort.each do |ip|
-      lines << "#{ip} #{@data.select{|x| x[:ip] == ip}.map{|x| x[:full_name]}.join(' ')}"
-    end
-    @ssh.scp file(name), lines.join("\n")
     @ssh.exec "killall -HUP dnsmasq"
     puts "Dnsmasq updated on #{@params[:host]} for zone #{name}"
   end

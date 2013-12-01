@@ -2,11 +2,13 @@
 require 'master-cap/hypervisors/base'
 require 'master-cap/helpers/ssh_helper'
 
+require 'digest/md5'
+
 class HypervisorLxc < Hypervisor
 
   include SshHelper
 
-  def initialize(cap, params)
+  def initialize cap, params
     super(cap, params)
     @params = params
     [:lxc_user, :lxc_host, :lxc_sudo].each do |x|
@@ -43,6 +45,7 @@ class HypervisorLxc < Hypervisor
   def create_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|
+      fs_backing = vm[:vm][:fs_backing] || :chroot
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
       template_name = vm[:vm][:template_name]
       template_opts = vm[:vm][:template_opts] || ""
@@ -55,9 +58,8 @@ class HypervisorLxc < Hypervisor
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
 
       ssh_keys = vm[:vm][:ssh_keys]
-      lvm_mode = vm[:vm][:lvm]
 
-      if lvm_mode
+      if fs_backing == :lvm
         raise "No vg for #{name}" unless vm[:vm][:lvm][:vg_name]
         raise "No size for #{name}" unless vm[:vm][:lvm][:root_size]
       end
@@ -98,12 +100,35 @@ EOF
       config << ""
       config << ""
       @ssh.scp "/tmp/lxc_config_#{name}", config.join("\n")
-      command = "lxc-create -t #{template_name} -n #{name} -f /tmp/lxc_config_#{name}"
-      command += " -B lvm --vgname #{vm[:vm][:lvm][:vg_name]} --fssize #{vm[:vm][:lvm][:root_size]}" if lvm_mode
-      command += " -- #{template_opts}"
-      puts "Command line : #{command}"
-      @ssh.exec command
-      @ssh.exec "mount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name} /var/lib/lxc/#{name}/rootfs" if lvm_mode
+      if fs_backing == :lvm
+        command = "lxc-create -t #{template_name} -n #{name} -f /tmp/lxc_config_#{name}"
+        command += " -B lvm --vgname #{vm[:vm][:lvm][:vg_name]} --fssize #{vm[:vm][:lvm][:root_size]}" if fs_backing == :lvm
+        command += " -- #{template_opts}"
+        puts "Command line : #{command}"
+        @ssh.exec command
+      end
+      if fs_backing == :btrfs
+        template_prefix = vm[:vm][:template_prefix] || "/usr/share/lxc/templates/lxc-"
+        res = Digest::MD5.hexdigest(@ssh.capture "cat #{template_prefix}#{template_name}")
+        clone_image = "template-btrfs-#{template_name}-#{res}"
+        a = @ssh.capture("lxc-ls | grep #{clone_image} || true")
+        if a.empty?
+          puts "Creating template #{clone_image}"
+          command = "lxc-create -t #{template_name} -n #{clone_image} -B btrfs"
+          puts "Command line : #{command}"
+          @ssh.exec command
+        end
+        command = "lxc-clone -o #{clone_image} -n #{name} -s"
+        puts "Command line : #{command}"
+        @ssh.exec command
+        @ssh.exec "cat /tmp/lxc_config_#{name} | sudo tee -a /var/lib/lxc/#{name}/config"
+      end
+      if fs_backing == :chroot
+        command = "lxc-create -t #{template_name} -n #{name} -f /tmp/lxc_config_#{name} -- #{template_opts}"
+        puts "Command line : #{command}"
+        @ssh.exec command
+      end
+      @ssh.exec "mount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name} /var/lib/lxc/#{name}/rootfs" if fs_backing == :lvm
       @ssh.exec "rm -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host*key*"
       @ssh.exec "ssh-keygen -t rsa -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host_rsa_key -C root@#{name} -N '' -q "
       @ssh.exec "ssh-keygen -t dsa -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host_dsa_key -C root@#{name} -N '' -q "
@@ -127,7 +152,7 @@ EOF
       @ssh.exec "chroot /var/lib/lxc/#{name}/rootfs which curl || sudo chroot /var/lib/lxc/#{name}/rootfs apt-get install curl -y"
 
       @ssh.scp "/var/lib/lxc/#{name}/rootfs/opt/master-chef/etc/override_ohai.json", JSON.dump(override_ohai) unless override_ohai.empty? || @params[:no_ohai_override]
-      @ssh.exec "umount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name}" if lvm_mode
+      @ssh.exec "umount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name}" if fs_backing == :lvm
       @ssh.exec "rm /tmp/lxc_config_#{name}"
       @ssh.exec "lxc-start -d -n #{name}"
       @ssh.exec "ln -s /var/lib/lxc/#{name}/config /etc/lxc/auto/#{name}.conf"

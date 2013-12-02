@@ -15,6 +15,8 @@ class AppsCustom < AppsBase
       :application => name,
       :user => config[:user] || "deploy",
     }
+    map[:repository] = config[:repository] if config[:repository]
+    map[:deploy_to] = config[:app_directory] if config[:app_directory]
     config[:required_params].each do |x|
       begin
         map[x] = @cap.fetch x

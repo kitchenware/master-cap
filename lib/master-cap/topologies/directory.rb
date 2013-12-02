@@ -7,8 +7,26 @@ Capistrano::Configuration.instance.load do
 
   topology_directory = fetch(:topology_directory, 'topology')
 
+  set :env_list, Dir["#{topology_directory}/*.yml"]
+
+  set :lazy_load_pattern, ["-%s$", "^%s$"]
+
   task :load_topology_directory do
-    Dir["#{topology_directory}/*.yml"].each do |f|
+    env_to_load = []
+    if exists? :no_lazy_load
+      env_to_load = env_list
+    else
+      env_to_load = []
+      env_list.each do |env|
+        top.logger.instance_variable_get("@options")[:actions].each do |a|
+          lazy_load_pattern.each do |x|
+            env_to_load << env if Regexp.new(x.gsub(/%s/, File.basename(env).split('.')[0])).match(a)
+          end
+        end
+      end
+      env_to_load.uniq!
+    end
+    env_to_load.each do |f|
       next if f =~ /.inc.yml/
       env = File.basename(f).split('.')[0]
       puts "Loading file #{f}"

@@ -1,5 +1,5 @@
 
-require 'master-cap/hypervisors/base'
+require_relative 'base'
 
 class HypervisorShell < Hypervisor
 

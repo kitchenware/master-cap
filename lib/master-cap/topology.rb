@@ -1,5 +1,5 @@
 
-require 'master-cap/topologies/directory.rb'
+require_relative 'topologies/directory'
 
 TOPOLOGY = {}
 

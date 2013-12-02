@@ -1,6 +1,6 @@
 
-require 'master-cap/hypervisors/base'
-require 'master-cap/helpers/ssh_helper'
+require_relative 'base'
+require_relative '../helpers/ssh_helper'
 
 require 'digest/md5'
 

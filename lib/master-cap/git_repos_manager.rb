@@ -1,3 +1,3 @@
 
-require 'master-cap/git_repos_manager/empty.rb'
-require 'master-cap/git_repos_manager/simple.rb'
+require_relative 'git_repos_manager/empty'
+require_relative 'git_repos_manager/simple'

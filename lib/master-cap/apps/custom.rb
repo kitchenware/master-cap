@@ -1,5 +1,5 @@
 
-require 'master-cap/apps/base'
+require_relative 'base'
 
 class AppsCustom < AppsBase
 

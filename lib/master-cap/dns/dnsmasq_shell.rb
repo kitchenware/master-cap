@@ -1,6 +1,6 @@
 
-require 'master-cap/dns/base_dns'
-require 'master-cap/helpers/ssh_helper'
+require_relative 'base_dns'
+require_relative '../helpers/ssh_helper'
 
 class DnsDnsmasqShell < BaseDns
 

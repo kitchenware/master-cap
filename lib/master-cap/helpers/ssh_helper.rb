@@ -1,6 +1,4 @@
 
-require 'master-cap/hypervisors/base'
-
 class SshDriver
 
   include ShellHelper

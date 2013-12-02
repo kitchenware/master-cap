@@ -1,4 +1,6 @@
 
+require_relative 'helpers/topological_sort'
+
 APPS={}
 
 Capistrano::Configuration.instance.load do
@@ -47,8 +49,8 @@ Capistrano::Configuration.instance.load do
 
     task :deploy_all do
       env = check_only_one_env
-      APPS.keys.sort.each do |x|
-        get_app(env, APPS[x][:name]).deploy if APPS[x][:env] == env
+      topological_sort(APPS).each do |x|
+        top.apps.send(APPS[x][:name]).deploy if APPS[x][:env] == env
       end
     end
 

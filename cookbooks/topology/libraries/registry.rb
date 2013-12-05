@@ -83,11 +83,9 @@ class RegistryMasterCap < Registry
         case config[:type].to_sym
           when :interpolated
             if options[:only_one]
-                result << {"uri" => eval('"' + config[:string] + '"'), "layer" => LAYER_STANDARD}
+              result << {"uri" => eval('"' + config[:string] + '"'), "layer" => LAYER_STANDARD}
             end
           when :mysql
-            load_extensions LocalStorage
-            load_extensions LocalStorage
             load_extensions LocalStorage
             load_extensions MysqlHelper
             mysql_conf = mysql_config(config[:id].to_s)
@@ -96,6 +94,11 @@ class RegistryMasterCap < Registry
               topology_nodes.each do |topology_node|
                 topology_node["id"] = config[:id]
                 topology_node["uri"] = "mysql://#{encode(mysql_conf[:username])}:#{encode(mysql_conf[:password])}@#{topology_node["ip"]}:3306/#{mysql_conf[:database]}"
+              end
+              if topology_nodes.size == 1
+                mysql_compute_host config[:id] do
+                  topology_nodes.first["ip"]
+                end
               end
             else
               topology_nodes.each do |topology_node|

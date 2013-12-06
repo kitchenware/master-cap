@@ -11,8 +11,8 @@ class SimpleGitReposManager
     @repos.each do |x|
       result[x[:url]] = x[:ref] if x[:ref]
       if x[:url].match('master-cap.git')
-        result = File.read('Gemfile.lock').match(/remote:[^\n]+master-cap.git\n\s*revision: ([0-9a-f]+)\n/)
-        result[x[:url]] = result[1] if result
+        m = File.read('Gemfile.lock').match(/remote:[^\n]+master-cap.git\n\s*revision: ([0-9a-f]+)\n/)
+        result[x[:url]] = m[1] if m
       end
     end
     result.size == 0 ? nil : result

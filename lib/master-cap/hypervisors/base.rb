@@ -56,23 +56,23 @@ class Hypervisor
     result
   end
   def start_vms l, no_dry
-    raise "Not implemented start_vms in #{self.class}"
+    @cap.error "Not implemented start_vms in #{self.class}"
   end
 
   def stop_vms l, no_dry
-    raise "Not implemented stop_vms in #{self.class}"
+    @cap.error "Not implemented stop_vms in #{self.class}"
   end
 
   def reboot_vms l, no_dry
-    raise "Not implemented reboot_vms in #{self.class}"
+    @cap.error "Not implemented reboot_vms in #{self.class}"
   end
 
   def info_vms l, no_dry
-    raise "Not implemented info_vms in #{self.class}"
+    @cap.error "Not implemented info_vms in #{self.class}"
   end
 
   def console_vms l, no_dry
-    raise "Not implemented console_vms in #{self.class}"
+    @cap.error "Not implemented console_vms in #{self.class}"
   end
 
 end

@@ -6,9 +6,9 @@ class AppsCapistrano < AppsBase
   def initialize cap, name, config
     super(cap, name, config)
     [:scm].each do |x|
-      raise "Please specify :#{x} attr" unless config.key? x
+      @cap.error "Please specify :#{x} attr for app #{name}" unless config.key? x
     end
-    raise "Unknown scm #{config[:scm]}" if config[:scm] != :git
+    @cap.error "Unknown scm #{config[:scm]} for app #{name}" if config[:scm] != :git
     config[:branch] ||= 'master'
   end
 

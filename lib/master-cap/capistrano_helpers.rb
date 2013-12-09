@@ -8,11 +8,11 @@ Capistrano::Configuration.instance.load do
     begin
       Timeout.timeout(timeout) do
         Process.wait(pid)
-        raise "Wrong return code for #{cmd} : #{$?.exitstatus}" unless $?.exitstatus == 0
+        error "Wrong return code for #{cmd} : #{$?.exitstatus}" unless $?.exitstatus == 0
       end
     rescue Timeout::Error
       Process.kill('TERM', pid)
-      raise "Timeout when executing #{cmd}"
+      error "Timeout when executing #{cmd}"
     end
   end
 
@@ -81,6 +81,10 @@ Capistrano::Configuration.instance.load do
       end
     end
     result
+  end
+
+  def error msg
+    abort "Error : #{msg}"
   end
 
 end

@@ -6,7 +6,7 @@ class AppsCustom < AppsBase
   def initialize cap, name, config
     super(cap, name, config)
     [:required_params].each do |x|
-      raise "Please specify :#{x} attr" unless config.key? x
+      @cap.error "Please specify :#{x} attr for app #{name}" unless config.key? x
     end
   end
 
@@ -21,7 +21,7 @@ class AppsCustom < AppsBase
       begin
         map[x] = @cap.fetch x
       rescue
-        raise "Please specify param #{x}"
+        @cap.error "Please specify param #{x} for app #{name}"
       end
     end
     map

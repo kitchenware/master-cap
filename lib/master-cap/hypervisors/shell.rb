@@ -7,7 +7,7 @@ class HypervisorShell < Hypervisor
     super(cap, params)
     @params = params
     [:list_vms, :create_vm, :delete_vm, :directory].each do |x|
-      raise "Missing params :#{x}" unless @params.key? x
+      @cap.error "Missing params :#{x}" unless @params.key? x
     end
   end
 
@@ -94,7 +94,7 @@ class HypervisorShell < Hypervisor
     else
       Kernel.system "#{shell} -c \"#{cmd}\""
     end
-    raise "Command #{cmd} return error code #{$?}" unless $? == 0
+    @cap.error "Command #{cmd} return error code #{$?}" unless $? == 0
     original_env.each do |k, v|
       ENV[k] = v
     end

@@ -16,7 +16,7 @@ Capistrano::Configuration.instance.load do
           errors = $!
         end
       end
-      raise errors if errors
+      @cap.error errors if errors
     end
 
     def get_dns config
@@ -38,7 +38,7 @@ Capistrano::Configuration.instance.load do
       env = check_only_one_env
       id = "#{env}_#{hypervisor_name}"
       unless HYPERVISORS[id]
-        raise "Unknown hypervisor #{hypervisor_name}" unless TOPOLOGY[env][:hypervisors] && TOPOLOGY[env][:hypervisors][hypervisor_name]
+        @cap.error "Unknown hypervisor #{hypervisor_name}" unless TOPOLOGY[env][:hypervisors] && TOPOLOGY[env][:hypervisors][hypervisor_name]
         params = TOPOLOGY[env][:hypervisors][hypervisor_name][:params] || {}
         type = TOPOLOGY[env][:hypervisors][hypervisor_name][:type]
         clazz = "Hypervisor#{type.to_s.capitalize}"

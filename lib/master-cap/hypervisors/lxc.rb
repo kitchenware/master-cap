@@ -12,7 +12,7 @@ class HypervisorLxc < Hypervisor
     super(cap, params)
     @params = params
     [:lxc_user, :lxc_host, :lxc_sudo].each do |x|
-      raise "Missing params :#{x}" unless @params.key? x
+      @cap.error "Missing params :#{x}" unless @params.key? x
     end
     @ssh = SshDriver.new @params[:lxc_host], @params[:lxc_user], @params[:lxc_sudo]
   end
@@ -49,7 +49,7 @@ class HypervisorLxc < Hypervisor
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
       template_name = vm[:vm][:template_name]
       template_opts = vm[:vm][:template_opts] || ""
-      raise "No template specified for vm #{name}" unless template_name
+      @cap.error "No template specified for vm #{name}" unless template_name
       puts "Creating #{name}, using template #{template_name}, options #{template_opts}"
       network_gateway = vm[:vm][:network_gateway] || @ssh.capture("/bin/sh -c '. /etc/default/lxc && echo \\$LXC_ADDR'").strip
       network_netmask = vm[:vm][:network_netmask] || @ssh.capture("/bin/sh -c '. /etc/default/lxc && echo \\$LXC_NETMASK'").strip
@@ -60,8 +60,8 @@ class HypervisorLxc < Hypervisor
       ssh_keys = vm[:vm][:ssh_keys]
 
       if fs_backing == :lvm
-        raise "No vg for #{name}" unless vm[:vm][:lvm][:vg_name]
-        raise "No size for #{name}" unless vm[:vm][:lvm][:root_size]
+        @cap.error "No vg for #{name}" unless vm[:vm][:lvm][:vg_name]
+        @cap.error "No size for #{name}" unless vm[:vm][:lvm][:root_size]
       end
 
       user = @cap.fetch(:user)

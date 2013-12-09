@@ -10,7 +10,7 @@ class AppsBase
     @name = name
     @config = config
     [:finder, :cap_directory].each do |x|
-      raise "Please specify :#{x} attr" unless config[x]
+      @cap.error "Please specify :#{x} attr for app #{name}" unless config[x]
     end
   end
 

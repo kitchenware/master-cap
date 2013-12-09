@@ -103,7 +103,7 @@ Capistrano::Configuration.instance.load do
         template = YAML.load(::Erubis::Eruby.new(File.read(file)).result(params))
       rescue Exception => e
         puts "ERROR : Error while reading [#{file}]"
-        raise e
+        error e
       end
       TOPOLOGY[env].deep_merge!(template, :merge_hash_arrays => true)
     end

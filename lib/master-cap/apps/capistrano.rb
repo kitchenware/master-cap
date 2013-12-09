@@ -33,7 +33,7 @@ class AppsCapistrano < AppsBase
   def get_git_version git_repository, git_branch
     return git_branch if git_branch =~ /^[0-9a-f]{40}$/
     result = %x(git ls-remote #{git_repository} #{git_branch})
-    error "No version found for branch #{git_branch} in git repository #{git_repository}" if result.empty?
+    @cap.error "No version found for branch #{git_branch} in git repository #{git_repository}" if result.empty?
     hash = result.split(/[\t\n]/)[0]
     puts "Git resolver : #{git_repository} / #{git_branch} => #{hash}"
     hash

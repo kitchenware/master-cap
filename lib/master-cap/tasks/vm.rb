@@ -61,7 +61,7 @@ Capistrano::Configuration.instance.load do
       node = node.clone
       node[:vm] = {} unless node[:vm]
       node[:vm] = TOPOLOGY[env][:default_vm].deep_merge(node[:vm]) if TOPOLOGY[env][:default_vm]
-      node[:vm] = hypervisor.default_vm_config.deep_merge(node[:vm]) if hypervisor.respond_to? :default_vm_config
+      node[:vm] = node[:vm].deep_merge(hypervisor.default_vm_config) if hypervisor.respond_to? :default_vm_config
       node
     end
 
@@ -166,7 +166,6 @@ Capistrano::Configuration.instance.load do
 
     def for_not_existing post_clear_caches = false, &block
       exists, not_exists = list_vms
-
       exists.each do |hypervisor, l|
         l.each do |name, vm|
           puts "\e[32mVm #{name} does exist on #{hypervisor}\e[0m"

@@ -28,7 +28,6 @@ class AppsCustom < AppsBase
         map[x] = v
       end
     end
-    p map
     map
   end
 

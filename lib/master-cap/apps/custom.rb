@@ -5,9 +5,6 @@ class AppsCustom < AppsBase
 
   def initialize cap, name, config
     super(cap, name, config)
-    [:required_params].each do |x|
-      @cap.error "Please specify :#{x} attr for app #{name}" unless config.key? x
-    end
   end
 
   def default_opts
@@ -17,13 +14,21 @@ class AppsCustom < AppsBase
     }
     map[:repository] = config[:repository] if config[:repository]
     map[:deploy_to] = config[:app_directory] if config[:app_directory]
-    config[:required_params].each do |x|
+    (config[:required_params] || []).each do |x|
       begin
         map[x] = @cap.fetch x
       rescue
         @cap.error "Please specify param #{x} for app #{name}"
       end
     end
+    (config[:default_params] || {}).each do |x, v|
+      begin
+        map[x] = @cap.fetch x
+      rescue
+        map[x] = v
+      end
+    end
+    p map
     map
   end
 

@@ -1,6 +1,6 @@
 
-require_relative 'master-cap/dns/base_dns'
-require_relative 'master-cap/helpers/simple_http_client'
+require_relative './base_dns'
+require_relative '../helpers/simple_http_client'
 
 class DnsDnsmasqRestApi < BaseDns
 

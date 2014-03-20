@@ -89,6 +89,9 @@ EOF
         override_ohai[:memory] = {} unless override_ohai[:memory]
         override_ohai[:memory][:total] = vm[:vm][:memory]
       end
+      if vm[:vm][:memory_swappiness]
+        config << "lxc.cgroup.memory.swappiness = #{vm[:vm][:memory_swappiness]}"
+      end
       if vm[:vm][:memory_swap]
         config << "lxc.cgroup.memory.memsw.limit_in_bytes = #{vm[:vm][:memory_swap]}"
       end

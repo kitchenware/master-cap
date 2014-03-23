@@ -15,7 +15,7 @@ template "/etc/default/lxc" do
 end
 
 template "/usr/share/lxc/templates/lxc-ubuntu-chef" do
-  source "lxc-ubuntu-chef.erb"
+  source node.master_cap_lxc.ubuntu_chef_template || "lxc-ubuntu-chef.erb"
   mode '0755'
   variables node.master_cap_lxc
 end

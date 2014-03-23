@@ -44,6 +44,7 @@ class HypervisorLxc < Hypervisor
 
   def create_vms l, no_dry
     return unless no_dry
+    version = @ssh.capture("dpkg -l lxc | grep lxc").split(' ')[2]
     l.each do |name, vm|
       fs_backing = vm[:vm][:fs_backing] || :chroot
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
@@ -100,6 +101,7 @@ EOF
         override_ohai[:cpu] = {} unless override_ohai[:cpu]
         override_ohai[:cpu][:total] = (vm[:vm][:cpu_shares] / 1024).to_i
       end
+      config << "lxc.start.auto = 1" unless version =~ /^0.9/
       config << ""
       config << ""
       @ssh.scp "/tmp/lxc_config_#{name}", config.join("\n")
@@ -110,20 +112,21 @@ EOF
         puts "Command line : #{command}"
         @ssh.exec command
       end
-      if fs_backing == :btrfs
+      if fs_backing == :btrfs || fs_backing == :zfs
         template_prefix = vm[:vm][:template_prefix] || "/usr/share/lxc/templates/lxc-"
         res = Digest::MD5.hexdigest(@ssh.capture "cat #{template_prefix}#{template_name}")
-        clone_image = "template-btrfs-#{template_name}-#{res}"
+        clone_image = "template-#{fs_backing}-#{template_name}-#{res}"
         a = @ssh.capture("lxc-ls | grep #{clone_image} || true")
         if a.empty?
           puts "Creating template #{clone_image}"
-          command = "lxc-create -t #{template_name} -n #{clone_image} -B btrfs"
+          command = "lxc-create -t #{template_name} -n #{clone_image} -B #{fs_backing}"
           puts "Command line : #{command}"
           @ssh.exec command
         end
         command = "lxc-clone -o #{clone_image} -n #{name} -s"
         puts "Command line : #{command}"
         @ssh.exec command
+        @ssh.exec "sed -i '/^lxc.network/d' /var/lib/lxc/#{name}/config" unless version =~ /^0.9/
         @ssh.exec "cat /tmp/lxc_config_#{name} | sudo tee -a /var/lib/lxc/#{name}/config"
       end
       if fs_backing == :chroot
@@ -158,7 +161,7 @@ EOF
       @ssh.exec "umount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name}" if fs_backing == :lvm
       @ssh.exec "rm /tmp/lxc_config_#{name}"
       @ssh.exec "lxc-start -d -n #{name}"
-      @ssh.exec "ln -s /var/lib/lxc/#{name}/config /etc/lxc/auto/#{name}.conf"
+      @ssh.exec "ln -s /var/lib/lxc/#{name}/config /etc/lxc/auto/#{name}.conf" if version =~ /^0.9/
       wait_ssh vm[:host_ips][:admin][:ip], user
     end
   end

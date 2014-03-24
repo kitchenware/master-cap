@@ -610,6 +610,8 @@ EOF
 
     # Re-enable service startup
     rm $rootfs/usr/sbin/policy-rc.d
+
+    rm -rf $rootfs/opt/master-chef/var/git_repos
 }
 
 do_bindhome()

@@ -60,7 +60,7 @@ Capistrano::Configuration.instance.load do
       env = check_only_one_env
       node = node.clone
       node[:vm] = {} unless node[:vm]
-      node[:vm] = TOPOLOGY[env][:default_vm].deep_merge(node[:vm]) if TOPOLOGY[env][:default_vm]
+      node[:vm] = node[:vm].deep_merge(TOPOLOGY[env][:default_vm]) if TOPOLOGY[env][:default_vm]
       node[:vm] = node[:vm].deep_merge(hypervisor.default_vm_config) if hypervisor.respond_to? :default_vm_config
       node
     end

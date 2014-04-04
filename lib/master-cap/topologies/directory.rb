@@ -39,6 +39,21 @@ Capistrano::Configuration.instance.load do
 
       nodes = []
       roles_map = Hash.new { |hash, key| hash[key] = [] }
+
+      class SimpleTopologyReader
+
+        def initialize env, topology
+          @topology = topology
+        end
+
+        def read
+          @topology[:topology]
+        end
+
+      end
+
+      topology_reader_class = TOPOLOGY[env][:topology_reader_class] || 'SimpleTopologyReader'
+      TOPOLOGY[env][:topology] = Object.const_get(topology_reader_class).new(env, TOPOLOGY[env]).read
       TOPOLOGY[env][:topology].each do |k, v|
         v[:topology_name] = k
         v[:capistrano_name] = get_translation_strategy(env).capistrano_name(k)

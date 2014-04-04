@@ -13,6 +13,7 @@ Capistrano::Configuration.instance.load do
         begin
           yield x
         rescue
+          puts $!, $!.backtrace if exists? :display_vm_error
           errors = $!
         end
       end

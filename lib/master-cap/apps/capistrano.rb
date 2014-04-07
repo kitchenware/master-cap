@@ -20,6 +20,11 @@ class AppsCapistrano < AppsBase
       :deploy_to => config[:app_directory],
       :user => config[:user] || "deploy",
     }
+    (config[:cap_wrapped_params] || []).each do |param|
+      if cap.exists? param
+        result[param] = cap.fetch(param)
+      end
+    end
     result[:branch] = get_git_version config[:repository], @cap.fetch("branch_#{name}".to_sym, config[:branch])
     result
   end

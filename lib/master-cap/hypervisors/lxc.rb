@@ -34,12 +34,7 @@ class HypervisorLxc < Hypervisor
     return unless no_dry
     l.each do |name, vm|
       puts "Stopping #{name}"
-      version = @ssh.capture("dpkg -l lxc | grep lxc").split(' ')[2]
-      if version =~ /^0.9/
-        @ssh.exec "lxc-stop -n #{name}"
-      else
-        @ssh.exec "lxc-stop -n #{name} -t 30"
-      end
+      stop name
     end
   end
 
@@ -49,7 +44,6 @@ class HypervisorLxc < Hypervisor
 
   def create_vms l, no_dry
     return unless no_dry
-    version = @ssh.capture("dpkg -l lxc | grep lxc").split(' ')[2]
     l.each do |name, vm|
       fs_backing = vm[:vm][:fs_backing] || :chroot
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
@@ -171,11 +165,26 @@ EOF
     end
   end
 
+  def version
+    unless @version
+      version = @ssh.capture("dpkg -l lxc | grep lxc").split(' ')[2]
+    end
+    @version
+  end
+
+  def stop name, extended_cmd = ''
+    if version =~ /^0.9/
+      @ssh.exec "lxc-stop -n #{name} #{extended_cmd}"
+    else
+      @ssh.exec "lxc-stop -n #{name} -t 30 #{extended_cmd}"
+    end
+  end
+
   def delete_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|
       puts "Deleting #{name}"
-      @ssh.exec "lxc-stop -n #{name} || true"
+      stop name, "|| true"
       @ssh.exec "lxc-destroy -n #{name}"
       @ssh.exec "rm -f /etc/lxc/auto/#{name}"
     end

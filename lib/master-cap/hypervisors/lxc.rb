@@ -34,7 +34,12 @@ class HypervisorLxc < Hypervisor
     return unless no_dry
     l.each do |name, vm|
       puts "Stopping #{name}"
-      @ssh.exec "lxc-stop -n #{name}"
+      version = @ssh.capture("dpkg -l lxc | grep lxc").split(' ')[2]
+      if version =~ /^0.9/
+        @ssh.exec "lxc-stop -n #{name}"
+      else
+        @ssh.exec "lxc-stop -n #{name} -t 30"
+      end
     end
   end
 

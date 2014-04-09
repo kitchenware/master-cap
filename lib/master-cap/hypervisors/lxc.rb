@@ -100,6 +100,9 @@ EOF
         override_ohai[:cpu] = {} unless override_ohai[:cpu]
         override_ohai[:cpu][:total] = (vm[:vm][:cpu_shares] / 1024).to_i
       end
+      if vm[:vm][:extended_lxc_config_lines]
+        config += vm[:vm][:extended_lxc_config_lines]
+      end
       config << "lxc.start.auto = 1" unless version =~ /^0.9/
       config << ""
       config << ""

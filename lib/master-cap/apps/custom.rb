@@ -22,11 +22,7 @@ class AppsCustom < AppsBase
       end
     end
     (config[:default_params] || {}).each do |x, v|
-      begin
-        map[x] = @cap.fetch x
-      rescue
-        map[x] = v
-      end
+      map[x] = @cap.fetch(x, v)
     end
     map
   end

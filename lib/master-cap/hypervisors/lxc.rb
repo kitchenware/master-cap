@@ -170,7 +170,7 @@ EOF
 
   def version
     unless @version
-      version = @ssh.capture("dpkg -l lxc | grep lxc").split(' ')[2]
+      @version = @ssh.capture("dpkg -l lxc | grep lxc").split(' ')[2]
     end
     @version
   end

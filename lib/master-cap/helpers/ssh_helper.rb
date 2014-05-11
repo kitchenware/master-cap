@@ -68,7 +68,7 @@ module SshHelper
   def wait_ssh target, user, timeout = 60
     wait "SSH availability for #{target}", 2, timeout do
       begin
-        exec_local "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error #{user}@#{target} \"uname\" > /dev/null 2>&1"
+        exec_local "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error #{user}@#{target} -o ConnectTimeout=5 \"uname\""
         true
       rescue
         false

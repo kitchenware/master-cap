@@ -137,7 +137,7 @@ EOF
         @ssh.exec command
       end
       @ssh.exec "mount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name} /var/lib/lxc/#{name}/rootfs" if fs_backing == :lvm
-      @ssh.exec "rm -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host*key*"
+      @ssh.exec "sh -c 'rm -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host*key*'"
       @ssh.exec "ssh-keygen -t rsa -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host_rsa_key -C root@#{name} -N '' -q "
       @ssh.exec "ssh-keygen -t dsa -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host_dsa_key -C root@#{name} -N '' -q "
       @ssh.exec "ssh-keygen -t ecdsa -f /var/lib/lxc/#{name}/rootfs/etc/ssh/ssh_host_ecdsa_key -C root@#{name} -N '' -q"

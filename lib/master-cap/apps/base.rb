@@ -51,8 +51,10 @@ class AppsBase
   end
 
   def run_sub_cap cap_command, opts = {}
+    topology = get_topology(config[:finder])
+    return if topology.keys.empty? && cap.exists?(:allow_no_apps_deploy)
     f = Tempfile.new File.basename("sub_cap")
-    f.write JSON.dump(get_topology(config[:finder]))
+    f.write JSON.dump(topology)
     f.close
     files_to_load = config[:cap_files_to_load] || []
     params = opts.merge(default_opts).map{|k, v| "-s #{k}=#{v}"}.join(" ")

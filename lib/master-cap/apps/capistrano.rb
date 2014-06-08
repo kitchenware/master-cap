@@ -25,7 +25,7 @@ class AppsCapistrano < AppsBase
         result[param] = cap.fetch(param)
       end
     end
-    result[:branch] = get_git_version config[:repository], @cap.fetch("branch_#{name}".to_sym, config[:branch])
+    result[:branch] = get_git_version config[:repository], @cap.fetch("branch_#{name}".to_sym, config[:branch] || config[:default_branch])
     result
   end
 

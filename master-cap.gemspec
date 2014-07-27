@@ -25,7 +25,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency(%q<erubis>)
   s.add_runtime_dependency(%q<deep_merge>)
   s.add_runtime_dependency(%q<peach>)
-  s.add_runtime_dependency(%q<railsless-deploy>)
 
   s.add_development_dependency(%q<foodcritic>)
 end

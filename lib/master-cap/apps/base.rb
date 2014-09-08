@@ -62,7 +62,6 @@ class AppsBase
     params += " -S env=#{env}"
     params += " -S http_proxy='#{cap.fetch(:http_proxy)}'" if cap.exists? :http_proxy
     params += " -S no_proxy='#{cap.fetch(:no_proxy)}'" if cap.exists? :no_proxy
-    p params
     cmd = "cd #{cap.fetch(:apps_cap_directory)}/#{config[:cap_directory]} && TOPOLOGY=#{f.path} LOAD_INTO_CAP=#{files_to_load.join(':')} cap #{params} #{cap_command}"
     cap.exec_local cmd
   end

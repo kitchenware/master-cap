@@ -24,7 +24,7 @@ class AppsBase
         no_release_exceptions = false
         mapped_roles.each do |r|
           unless list[n].include? r
-            list[n][:roles] << r
+            list[n][:roles] << r unless list[n][:roles].include?(r)
             no_release = true if config[:no_release_roles].include?(r)
             no_release_exceptions = true if config[:no_release_roles_exceptions].include?(r)
           end

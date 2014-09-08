@@ -29,7 +29,7 @@ Capistrano::Configuration.instance.load do
     puts "Number of selected servers: #{ss.length}"
     ss = ss.sort_by do |item|
       item[1][:capistrano_name]
-    end 
+    end
     ss.each do |env, node|
       puts "#{fill(node[:capistrano_name], 30)} #{fill(node[:admin_hostname], 50)} [#{((node[:roles] || []) + (node[:recipes] || [])).sort.join(',')}]"
     end

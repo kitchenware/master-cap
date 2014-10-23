@@ -69,7 +69,11 @@ Capistrano::Configuration.instance.load do
           end
         end
       rescue Capistrano::ConnectionError => e
-        puts "\e[31m#{e}\e[0m"
+        if options[:hide_errors]
+          puts "\e[31m#{e}\e[0m"
+        else
+          raise e
+        end
       end
     end
     if options

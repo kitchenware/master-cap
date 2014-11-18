@@ -44,19 +44,15 @@ class HypervisorKvm < Hypervisor
     @params[:default_vm]
   end
 
-# vol-create-as default --format qcow2 --capacity 5G --name toto.qcow2
   def create_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|
-#       fs_backing = vm[:vm][:fs_backing] || :chroot
+      user = @cap.fetch(:user)
       ssh_keys = vm[:vm][:ssh_keys]
       vol_source = vm[:vm][:vol_source]
       machine_type = vm[:vm][:machine_type] || "pc-1.3"
       pool = vm[:vm][:pool] || "default"
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
-#       template_opts = vm[:vm][:template_opts] || ""
-#       @cap.error "No template specified for vm #{name}" unless template_name
-#       puts "Creating #{name}, using template #{template_name}, options #{template_opts}"
       network_gateway = vm[:vm][:network_gateway]
       network_netmask = vm[:vm][:network_netmask]
       network_bridge = vm[:vm][:network_bridge]
@@ -78,6 +74,24 @@ class HypervisorKvm < Hypervisor
 </disk>
 EOF
 
+      if vm[:vm][:disks]
+        vm[:vm][:disks].each_with_index do |size, index|
+          device = "vd#{('b'.ord + index).chr}"
+          n = "#{name}_#{device}.qcow2"
+          puts "Creating disk #{n} : #{size}"
+          @ssh.exec "virsh vol-create-as default --format qcow2 --capacity #{size} --name #{n}"
+          d = @ssh.capture "virsh vol-dumpxml #{n} --pool #{pool} | grep path"
+          d = d.match(/<path>(.*)<\/path>/)[1]
+          disks += <<-EOF
+<disk type='file' device='disk'>
+  <driver name='qemu' type='qcow2'/>
+  <source file='#{d}'/>
+  <target dev='#{device}' bus='virtio'/>
+</disk>
+EOF
+        end
+      end
+
       iface = <<-EOF
 auto lo
 iface lo inet loopback
@@ -86,8 +100,9 @@ auto eth0
 iface eth0 inet static
   address #{ip_config[:ip]}
   netmask #{network_netmask}
-  gateway #{network_gateway}
 EOF
+
+      iface += "  gateway #{network_gateway}" if network_gateway
 
       memory = vm[:vm][:memory] || 1024
       cpu = vm[:vm][:cpu] || 1
@@ -140,52 +155,48 @@ xml = <<-EOF
 </domain>
 EOF
 
-#       config << "lxc.start.auto = 1" unless version =~ /^0.9/
-        tmp_dir = "/tmp/" + (0...8).map { (65 + rand(26)).chr }.join
-        @ssh.exec "mkdir -p #{tmp_dir}"
-        @ssh.exec "modprobe nbd"
-        @ssh.exec "qemu-nbd --connect=/dev/nbd0 #{root_disk}"
-        @ssh.exec "mount /dev/nbd0p1 #{tmp_dir}"
-#       @ssh.exec "mount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name} /var/lib/lxc/#{name}/rootfs" if fs_backing == :lvm
-        @ssh.exec "sh -c 'rm -f #{tmp_dir}/etc/ssh/ssh_host*key*'"
-        @ssh.exec "ssh-keygen -t rsa -f #{tmp_dir}/etc/ssh/ssh_host_rsa_key -C root@#{name} -N '' -q "
-        @ssh.exec "ssh-keygen -t dsa -f #{tmp_dir}/etc/ssh/ssh_host_dsa_key -C root@#{name} -N '' -q "
-        @ssh.exec "ssh-keygen -t ecdsa -f #{tmp_dir}/etc/ssh/ssh_host_ecdsa_key -C root@#{name} -N '' -q"
+      tmp_dir = "/tmp/" + (0...8).map { (65 + rand(26)).chr }.join
+      @ssh.exec "mkdir -p #{tmp_dir}"
+      @ssh.exec "modprobe nbd"
+      @ssh.exec "umount /dev/nbd0p1 > /dev/null 2>&1 || true"
+      @ssh.exec "qemu-nbd --disconnect /dev/nbd0 > /dev/null 2>&1 || true"
+      @ssh.exec "qemu-nbd --connect=/dev/nbd0 #{root_disk}"
+      @ssh.exec "mount /dev/nbd0p1 #{tmp_dir}"
+      @ssh.exec "sh -c 'rm -f #{tmp_dir}/etc/ssh/ssh_host*key*'"
+      @ssh.exec "ssh-keygen -t rsa -f #{tmp_dir}/etc/ssh/ssh_host_rsa_key -C root@#{name} -N '' -q "
+      @ssh.exec "ssh-keygen -t dsa -f #{tmp_dir}/etc/ssh/ssh_host_dsa_key -C root@#{name} -N '' -q "
+      @ssh.exec "ssh-keygen -t ecdsa -f #{tmp_dir}/etc/ssh/ssh_host_ecdsa_key -C root@#{name} -N '' -q"
 
-        @ssh.exec "echo #{name} | sudo tee #{tmp_dir}/etc/hostname"
+      @ssh.exec "echo #{name} | sudo tee #{tmp_dir}/etc/hostname"
 
-        @ssh.scp "#{tmp_dir}/etc/network/interfaces", iface
-        @ssh.exec "rm #{tmp_dir}/etc/resolv.conf"
+      @ssh.scp "#{tmp_dir}/etc/network/interfaces", iface
+      @ssh.exec "rm #{tmp_dir}/etc/resolv.conf"
+      if network_dns
         @ssh.exec "echo nameserver #{network_dns} | sudo tee #{tmp_dir}/etc/resolv.conf"
+      else
+        @ssh.exec "echo '' | sudo tee #{tmp_dir}/etc/resolv.conf"
+      end
 
-        @ssh.exec "umount #{tmp_dir}"
-        @ssh.exec "qemu-nbd --disconnect /dev/nbd0"
+      @ssh.exec "cat #{tmp_dir}/etc/passwd | grep ^#{user} || sudo chroot #{tmp_dir} useradd #{user} --shell /bin/bash --create-home --home /home/#{user}"
+      @ssh.exec "chroot #{tmp_dir} mkdir /home/#{user}/.ssh"
+      @ssh.exec "chroot #{tmp_dir} chown -R #{user} /home/#{user}/.ssh"
+      @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", ssh_keys.join("\n")
+      @ssh.exec "cat #{tmp_dir}/etc/sudoers | grep \"^#{user}\" || echo '#{user}   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a #{tmp_dir}/etc/sudoers"
 
-        @ssh.scp "/tmp/virsh_#{name}.xml", xml
-        @ssh.exec "virsh define /tmp/virsh_#{name}.xml"
-        @ssh.exec "rm -rf #{tmp_dir} /tmp/virsh_#{name}.xml"
+      @ssh.exec "chroot #{tmp_dir} which curl || sudo chroot #{tmp_dir} apt-get install curl -y"
 
-        puts "Starting vm #{name}"
-        @ssh.exec "virsh autostart #{name}"
-        @ssh.exec "virsh start #{name}"
-# 
-#       # @ssh.exec "chroot /var/lib/lxc/#{name}/rootfs userdel ubuntu"
-#       # @ssh.exec "chroot /var/lib/lxc/#{name}/rootfs rm -rf /home/ubuntu"
+      @ssh.exec "umount #{tmp_dir}"
+      @ssh.exec "qemu-nbd --disconnect /dev/nbd0"
 
-#       @ssh.exec "cat /var/lib/lxc/#{name}/rootfs/etc/passwd | grep ^chef || sudo chroot /var/lib/lxc/#{name}/rootfs useradd #{user} --shell /bin/bash --create-home --home /home/#{user}"
-#       @ssh.exec "chroot /var/lib/lxc/#{name}/rootfs mkdir /home/#{user}/.ssh"
-#       @ssh.scp "/var/lib/lxc/#{name}/rootfs/home/#{user}/.ssh/authorized_keys", ssh_keys.join("\n")
-#       @ssh.exec "chroot /var/lib/lxc/#{name}/rootfs chown -R #{user} /home/#{user}/.ssh"
-#       @ssh.exec "cat /var/lib/lxc/#{name}/rootfs/etc/sudoers | grep \"^chef\" || echo 'chef   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /var/lib/lxc/#{name}/rootfs/etc/sudoers"
+      @ssh.scp "/tmp/virsh_#{name}.xml", xml
+      @ssh.exec "virsh define /tmp/virsh_#{name}.xml"
+      @ssh.exec "rm -rf #{tmp_dir} /tmp/virsh_#{name}.xml"
 
-#       @ssh.exec "chroot /var/lib/lxc/#{name}/rootfs which curl || sudo chroot /var/lib/lxc/#{name}/rootfs apt-get install curl -y"
+      puts "Starting vm #{name}"
+      @ssh.exec "virsh autostart #{name}"
+      @ssh.exec "virsh start #{name}"
 
-#       @ssh.scp "/var/lib/lxc/#{name}/rootfs/opt/master-chef/etc/override_ohai.json", JSON.dump(override_ohai) unless override_ohai.empty? || @params[:no_ohai_override]
-#       @ssh.exec "umount /dev/#{vm[:vm][:lvm][:vg_name]}/#{name}" if fs_backing == :lvm
-#       @ssh.exec "rm /tmp/lxc_config_#{name}"
-#       @ssh.exec "lxc-start -d -n #{name}"
-#       @ssh.exec "ln -s /var/lib/lxc/#{name}/config /etc/lxc/auto/#{name}.conf" if version =~ /^0.9/
-#       wait_ssh vm[:host_ips][:admin][:ip], user
+      wait_ssh ip_config[:ip], user
     end
   end
 

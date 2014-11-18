@@ -181,6 +181,7 @@ EOF
       @ssh.exec "chroot #{tmp_dir} mkdir /home/#{user}/.ssh"
       @ssh.exec "chroot #{tmp_dir} chown -R #{user} /home/#{user}/.ssh"
       @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", ssh_keys.join("\n")
+      @ssh.exec "chroot #{tmp_dir} which sudo || sudo chroot #{tmp_dir} apt-get install sudo -y"
       @ssh.exec "cat #{tmp_dir}/etc/sudoers | grep \"^#{user}\" || echo '#{user}   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a #{tmp_dir}/etc/sudoers"
 
       @ssh.exec "chroot #{tmp_dir} which curl || sudo chroot #{tmp_dir} apt-get install curl -y"

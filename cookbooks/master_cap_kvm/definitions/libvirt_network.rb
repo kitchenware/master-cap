@@ -8,8 +8,6 @@ define :libvirt_network, {
 
   libvirt_network_params = params
 
-  p libvirt_network_params
-
   content = "<network><name>#{libvirt_network_params[:name]}</name><bridge name='#{libvirt_network_params[:bridge]}'/>"
   content += "<forward/>" if libvirt_network_params[:forward]
   content += "<ip address='#{libvirt_network_params[:address]}' netmask='#{libvirt_network_params[:netmask]}'>"

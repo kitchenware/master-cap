@@ -178,7 +178,7 @@ EOF
       end
 
       @ssh.exec "cat #{tmp_dir}/etc/passwd | grep ^#{user} || sudo chroot #{tmp_dir} useradd #{user} --shell /bin/bash --create-home --home /home/#{user}"
-      @ssh.exec "chroot #{tmp_dir} mkdir /home/#{user}/.ssh"
+      @ssh.exec "chroot #{tmp_dir} mkdir -p /home/#{user}/.ssh"
       @ssh.exec "chroot #{tmp_dir} chown -R #{user} /home/#{user}/.ssh"
       @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", ssh_keys.join("\n")
       @ssh.exec "chroot #{tmp_dir} which sudo || sudo chroot #{tmp_dir} apt-get install sudo -y"

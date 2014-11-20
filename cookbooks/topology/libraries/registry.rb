@@ -262,7 +262,7 @@ class RegistryMasterCap < Registry
 
   def find_localizers_by_role(role)
     nodes = []
-    node.topology.to_hash.each_pair do |node_name, node_config|
+    node.topology.each_pair do |node_name, node_config|
       (node_config[:localizers] || []).each do |r|
         nodes << {'node_name' => node_name, 'layer' => LAYER_HIGH, 'node_config' => node_config} if r.to_sym == role
       end
@@ -279,7 +279,7 @@ class RegistryMasterCap < Registry
 
   def find_nodes_by_role(role)
     nodes = {}
-    node.topology.to_hash.each_pair do |node_name, node_config|
+    node.topology.each_pair do |node_name, node_config|
       (node_config[:roles] || []).each do |r|
         nodes[node_name] = node_config if r.to_sym == role
       end

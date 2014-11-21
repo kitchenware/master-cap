@@ -55,9 +55,15 @@ execute "create default pool" do
   not_if "virsh pool-list | fgrep default | fgrep active | fgrep -q yes"
 end
 
+service "apparmor" do
+  supports :reload => true
+  action [:nothing]
+end
+
 execute "allow libvirt to access hugespages in apparmor" do
-  command "echo 'owner \"/hugepages/libvirt/qemu/**\" rw,' >> /etc/apparmor.d/abstractions/libvirt-qemu && /etc/init.d/apparmor reload"
+  command "echo 'owner \"/hugepages/libvirt/qemu/**\" rw,' >> /etc/apparmor.d/abstractions/libvirt-qemu"
   not_if "cat /etc/apparmor.d/abstractions/libvirt-qemu | grep hugepages/libvirt/qemu"
+  notifies :reload, "service[apparmor]"
 end
 
 

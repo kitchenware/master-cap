@@ -52,6 +52,7 @@ class HypervisorKvm < Hypervisor
       vol_source = vm[:vm][:vol_source]
       machine_type = vm[:vm][:machine_type] || "pc-1.3"
       pool = vm[:vm][:pool] || "default"
+      hugespages = vm[:vm][:use_hugepages] || true
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
       network_gateway = vm[:vm][:network_gateway]
       network_netmask = vm[:vm][:network_netmask]
@@ -152,6 +153,17 @@ xml = <<-EOF
     <memballoon model='virtio'>
     </memballoon>
   </devices>
+EOF
+
+      if hugespages
+        xml += <<-EOF
+<memoryBacking>
+  <hugepages/>
+</memoryBacking>
+EOF
+      end
+
+      xml += <<-EOF
 </domain>
 EOF
 

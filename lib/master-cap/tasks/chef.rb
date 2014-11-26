@@ -69,7 +69,7 @@ Capistrano::Configuration.instance.load do
     task :upload_secured_roles, :roles => :linux_chef do
       env = check_only_one_env
       if TOPOLOGY[env][:secured_roles] && ENV['NO_SECURED_ROLES'].nil?
-        path = ENV["SECURED_ROLES"] || TOPOLOGY[env][:secured_roles]
+        path = ENV["SECURED_ROLES_PATH"] || TOPOLOGY[env][:secured_roles]
         if File.exists? path
           Dir["#{path}/#{env}*"].each do |x|
             run "sudo sh -c 'umask 0077 && tee /opt/master-chef/secured_roles/#{File.basename(x)} > /dev/null'", :data => File.read(x)

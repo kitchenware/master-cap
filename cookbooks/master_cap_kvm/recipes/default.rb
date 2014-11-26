@@ -5,7 +5,7 @@ package "libvirt-bin"
 include_recipe "master_cap_lxc::ksm"
 
 if node.master_cap_kvm.hugepages == "auto"
-  nr_hugepages = (node["memory"]["total"].delete("kB").to_i / 1024 / 2 * 0.9).to_i
+  nr_hugepages = (node["memory"]["total"].delete("kB").to_i / 1024 / 2 * 0.75).to_i
 else
   nr_hugepages = node.master_cap_kvm.hugepages
 end
@@ -65,6 +65,3 @@ execute "allow libvirt to access hugespages in apparmor" do
   not_if "cat /etc/apparmor.d/abstractions/libvirt-qemu | grep hugepages/libvirt/qemu"
   notifies :reload, "service[apparmor]"
 end
-
-
-

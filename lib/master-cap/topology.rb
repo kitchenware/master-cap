@@ -74,7 +74,7 @@ Capistrano::Configuration.instance.load do
     error "Please, do not launch this command on two env : #{env_list.keys.join(' ')}" if env_list.keys.size != 1
     env = env_list.keys.first
 
-    check_only_one_env_callback(env, servers) if exists? :check_only_one_env_callback
+    check_only_one_env_callback.call(env, servers) if exists? :check_only_one_env_callback
 
     env
   end

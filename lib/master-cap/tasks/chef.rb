@@ -47,7 +47,7 @@ Capistrano::Configuration.instance.load do
 
     def get_prefix
       prefix = ""
-      prefix += "http_proxy=#{http_proxy} https_proxy=#{http_proxy}" if exists? :http_proxy
+      prefix += "http_proxy=#{http_proxy} https_proxy=#{http_proxy} " if exists? :http_proxy
       prefix
     end
 

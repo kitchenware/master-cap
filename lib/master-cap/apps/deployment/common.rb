@@ -16,16 +16,11 @@ Capistrano::Configuration.instance.load do
     end
   end
 
-  def env_http_proxy
-    result = {}
-    if exists? :http_proxy
-      result['http_proxy'] = http_proxy
-      result['https_proxy'] = http_proxy
-    end
-    if exists? :no_proxy
-      result['NO_PROXY'] = no_proxy
-    end
-    result
+  if exists? :http_proxy
+    default_run_options[:env] = {
+      'http_proxy' => http_proxy,
+      'https_proxy' => http_proxy,
+    }
   end
 
   ENV['LOAD_INTO_CAP'].split(':').each do |f|

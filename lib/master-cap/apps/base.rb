@@ -58,7 +58,7 @@ class AppsBase
     f.write JSON.dump(topology)
     f.close
     files_to_load = config[:cap_files_to_load] || []
-    params = opts.merge(default_opts).map{|k, v| "-s #{k}=#{v}"}.join(" ")
+    params = opts.merge(default_opts).map{|k, v| "-s #{k}='#{v}'"}.join(" ")
     params += " -S env=#{env}"
     params += " -S http_proxy='#{cap.fetch(:http_proxy)}'" if cap.exists? :http_proxy
     params += " -S no_proxy='#{cap.fetch(:no_proxy)}'" if cap.exists? :no_proxy

@@ -96,7 +96,11 @@ Capistrano::Configuration.instance.load do
       upload_topology
       secured_roles = upload_secured_roles
       upload_git_tag_override
-      prefix = get_prefix + get_secured_roles_path
+      n = []
+      find_nodes(:roles => chef_role).each do |env, node, s|
+        n << node[:topology_name]
+      end
+      prefix = get_prefix + get_secured_roles_path + " PARALLEL_NODES=#{n.join(',')}"
       run "#{prefix} /opt/master-chef/bin/master-chef.sh"
     end
 

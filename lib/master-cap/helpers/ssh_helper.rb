@@ -37,7 +37,7 @@ end
 
 module SshHelper
 
-  def self.waituntil title, time
+  def waituntil title, time
     ti=0
     puts "Wait until #{title}"
     until ti == time
@@ -48,7 +48,7 @@ module SshHelper
     puts "."
   end
 
-  def self.wait title, pool, timeout
+  def wait title, pool, timeout
     puts "Waiting for #{title}"
     start = Time.now.to_i
     stop = start + timeout
@@ -67,7 +67,7 @@ module SshHelper
     raise "Timeout while waiting end of #{title}"
   end
 
-  def self.wait_ssh target, user, timeout = 60
+  def wait_ssh target, user, timeout = 60
     wait "SSH availability for #{target}", 2, timeout do
       begin
         exec_local "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error #{user}@#{target} -o ConnectTimeout=5 \"uname\""
@@ -78,4 +78,9 @@ module SshHelper
     end
   end
 
+end
+
+class SshTools
+  include ShellHelper
+  include SshHelper
 end

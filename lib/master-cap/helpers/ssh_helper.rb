@@ -1,4 +1,6 @@
 
+require_relative 'shell_helper'
+
 class SshDriver
 
   include ShellHelper

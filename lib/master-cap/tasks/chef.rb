@@ -130,7 +130,7 @@ Capistrano::Configuration.instance.load do
       prefix += "PROXY=#{http_proxy} " if exists? :http_proxy
       prefix += "MASTER_CHEF_HASH_CODE=#{master_chef_hash_code} " if exists? :master_chef_hash_code
       version = exists?(:master_chef_hash_code) ? master_chef_hash_code : "master"
-      run "#{get_prefix} curl -f -s -L http://rawgithub.com/kitchenware/master-chef/master/runtime/bootstrap.sh?#{version} | #{prefix} bash"
+      run "#{get_prefix} curl -f -s -L http://rawgithub.com/kitchenware/master-chef/#{version}/runtime/bootstrap.sh?#{version} | #{prefix} bash"
     end
 
 

@@ -5,7 +5,7 @@ package "libvirt-bin"
 include_recipe "master_cap_lxc::ksm"
 
 if node.master_cap_kvm.hugepages == "auto"
-  nr_hugepages = (node["memory"]["total"].delete("kB").to_i / 1024 / 2 * 0.75).to_i
+  nr_hugepages = (node["memory"]["total"].delete("kB").to_i / 1024 / 2 * node.master_cap_kvm.hugepages_ratio).to_i
 else
   nr_hugepages = node.master_cap_kvm.hugepages
 end

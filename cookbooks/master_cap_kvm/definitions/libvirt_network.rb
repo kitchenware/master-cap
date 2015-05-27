@@ -27,6 +27,7 @@ define :libvirt_network, {
     script = <<-EOF
 if [ "$1" = "#{libvirt_network_params[:name]}"  -a "$2" = "started" ]; then
   brctl addif #{libvirt_network_params[:bridge]} #{libvirt_network_params[:bind_physical]}
+  ifconfig #{libvirt_network_params[:bind_physical]} up
 fi
 EOF
 

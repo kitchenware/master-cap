@@ -93,6 +93,19 @@ EOF
         end
       end
 
+      if vm[:vm][:block_devices]
+        vm[:vm][:block_devices].each do |name, dev|
+          puts "Adding #{name} : #{dev}"
+          disks += <<-EOF
+<disk type='block' device='disk'>
+  <driver name='qemu' type='raw'/>
+  <source dev='#{dev}'/>
+  <target dev='#{name}' bus='virtio'/>
+</disk>
+EOF
+        end
+      end
+
       iface = <<-EOF
 auto lo
 iface lo inet loopback

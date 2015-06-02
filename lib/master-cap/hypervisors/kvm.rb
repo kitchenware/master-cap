@@ -94,15 +94,19 @@ EOF
       end
 
       if vm[:vm][:block_devices]
-        vm[:vm][:block_devices].each do |name, dev|
-          puts "Adding #{name} : #{dev}"
+        vm[:vm][:block_devices].each do |name, v|
+          puts "Adding #{name} : #{v[:dev]}"
           disks += <<-EOF
 <disk type='block' device='disk'>
   <driver name='qemu' type='raw'/>
-  <source dev='#{dev}'/>
+  <source dev='#{v[:dev]}'/>
   <target dev='#{name}' bus='virtio'/>
 </disk>
 EOF
+          if v[:fstype] && v[:format_fs]
+            puts "Formating #{v[:dev]} to #{v[:fstype]}"
+            @ssh.exec "mkfs -t #{v[:fstype]} #{v[:dev]}"
+          end
         end
       end
 

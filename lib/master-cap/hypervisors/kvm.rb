@@ -230,6 +230,37 @@ EOF
     end
   end
 
+  def update_vms l, no_dry
+    l.each do |name, vm|
+      pool = vm[:vm][:pool] || "default"
+      puts "Updating #{name}"
+      disks = @ssh.capture "virsh dumpxml #{name} | grep source | grep file"
+      disks = disks.split("\n").map{|x| File.basename(x.match(/file=.(.*\.qcow2)/)[1])}
+      if vm[:vm][:disks]
+        vm[:vm][:disks].each_with_index do |size, index|
+          device = "vd#{('b'.ord + index).chr}"
+          n = "#{name}_#{device}.qcow2"
+          unless disks.include? n
+            puts "Adding disk #{size} on #{name}"
+            @ssh.exec "virsh vol-create-as default --format qcow2 --capacity #{size} --name #{n}"
+            d = @ssh.capture "virsh vol-dumpxml #{n} --pool #{pool} | grep path"
+            d = d.match(/<path>(.*)<\/path>/)[1]
+            disk = <<-EOF
+<disk type='file' device='disk'>
+  <driver name='qemu' type='qcow2'/>
+  <source file='#{d}'/>
+  <target dev='#{device}' bus='virtio'/>
+</disk>
+EOF
+            @ssh.scp "/tmp/virsh_disk.xml", disk
+            @ssh.exec "virsh attach-device #{name} /tmp/virsh_disk.xml"
+            @ssh.exec "rm /tmp/virsh_disk.xml"
+          end
+        end
+      end
+    end
+  end
+
   def delete_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|

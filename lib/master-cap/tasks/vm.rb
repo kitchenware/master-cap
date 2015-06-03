@@ -199,6 +199,12 @@ Capistrano::Configuration.instance.load do
       top.vm.dns.remove_if_vm_not_exist
     end
 
+    task :update do
+      for_existing(true) do |hyp, l, dry|
+        hyp.update_vms l, exists?(:no_dry)
+      end
+    end
+
     namespace :dns do
 
       def get_existing env

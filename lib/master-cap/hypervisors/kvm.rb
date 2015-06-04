@@ -242,6 +242,7 @@ EOF
           n = "#{name}_#{device}.qcow2"
           unless disks.include? n
             puts "Adding disk #{size} on #{name}"
+            next unless no_dry
             @ssh.exec "virsh vol-create-as default --format qcow2 --capacity #{size} --name #{n}"
             d = @ssh.capture "virsh vol-dumpxml #{n} --pool #{pool} | grep path"
             d = d.match(/<path>(.*)<\/path>/)[1]

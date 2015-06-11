@@ -41,6 +41,7 @@ Capistrano::Configuration.instance.load do
       unless HYPERVISORS[id]
         error "Unknown hypervisor #{hypervisor_name}" unless TOPOLOGY[env][:hypervisors] && TOPOLOGY[env][:hypervisors][hypervisor_name]
         params = TOPOLOGY[env][:hypervisors][hypervisor_name][:params] || {}
+        params[:hypervisor_id] = id
         type = TOPOLOGY[env][:hypervisors][hypervisor_name][:type]
         clazz = "Hypervisor#{type.to_s.capitalize}"
         begin

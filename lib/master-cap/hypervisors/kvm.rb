@@ -26,7 +26,7 @@ class HypervisorKvm < Hypervisor
   def start_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|
-      puts "Starting #{name}"
+      puts "Starting #{name} on #{@params[:hypervisor_id]}"
       @ssh.exec "virsh start #{name}"
       wait_ssh vm[:hostname], @cap.fetch(:user)
     end
@@ -35,7 +35,7 @@ class HypervisorKvm < Hypervisor
   def stop_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|
-      puts "Stopping #{name}"
+      puts "Stopping #{name} on #{@params[:hypervisor_id]}"
       @ssh.exec "virsh destroy #{name}"
     end
   end
@@ -47,6 +47,7 @@ class HypervisorKvm < Hypervisor
   def create_vms l, no_dry
     return unless no_dry
     l.each do |name, vm|
+      puts "Creating #{name} on #{@params[:hypervisor_id]}"
       user = @cap.fetch(:user)
       ssh_keys = vm[:vm][:ssh_keys]
       vol_source = vm[:vm][:vol_source]
@@ -233,7 +234,7 @@ EOF
   def update_vms l, no_dry
     l.each do |name, vm|
       pool = vm[:vm][:pool] || "default"
-      puts "Updating #{name}"
+      puts "Updating #{name} on #{@params[:hypervisor_id]}"
       disks = @ssh.capture "virsh dumpxml #{name} | grep source | grep file"
       disks = disks.split("\n").map{|x| File.basename(x.match(/file=.(.*\.qcow2)/)[1])}
       if vm[:vm][:disks]
@@ -266,7 +267,7 @@ EOF
     return unless no_dry
     l.each do |name, vm|
       pool = vm[:vm][:pool] || "default"
-      puts "Deleting #{name}"
+      puts "Deleting #{name} on #{@params[:hypervisor_id]}"
       disks = @ssh.capture "virsh dumpxml #{name} | grep source | grep file"
       disks = disks.split("\n").map{|x| File.basename(x.match(/file=.(.*\.qcow2)/)[1])}
       @ssh.exec "virsh destroy #{name} || true"

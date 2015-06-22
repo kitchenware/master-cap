@@ -118,7 +118,8 @@ Capistrano::Configuration.instance.load do
       find_servers(:roles => chef_role).each do |x|
         prefix = ""
         prefix += get_secured_roles_path
-        prefix += "PROXY=#{http_proxy}" if exists? :http_proxy
+        prefix += "PROXY=#{http_proxy} " if exists? :http_proxy
+        prefix += "PROXY_COMMAND='#{ssh_options[:proxy].command_line_template}' " if exists?(:ssh_options) && ssh_options[:proxy]
         command = "sh -c \"#{prefix} #{master_chef_path}/runtime/chef_local.rb #{x} #{git_repos_manager.compute_local_path}\""
         abort unless system command
       end

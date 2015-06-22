@@ -42,7 +42,7 @@ Capistrano::Configuration.instance.load do
 
       class SimpleTopologyReader
 
-        def initialize env, topology
+        def initialize cap, env, topology
           @topology = topology
         end
 
@@ -53,7 +53,7 @@ Capistrano::Configuration.instance.load do
       end
 
       topology_reader_class = TOPOLOGY[env][:topology_reader_class] || 'SimpleTopologyReader'
-      TOPOLOGY[env][:topology] = Object.const_get(topology_reader_class).new(env, TOPOLOGY[env]).read
+      TOPOLOGY[env][:topology] = Object.const_get(topology_reader_class).new(self, env, TOPOLOGY[env]).read
       TOPOLOGY[env][:topology].each do |k, v|
         v[:topology_name] = k
         v[:capistrano_name] = get_translation_strategy(env).capistrano_name(k)

@@ -3,6 +3,24 @@ require 'peach'
 HYPERVISORS={}
 DNS={}
 
+def create_or_return_hypervisor cap, env, hypervisor_name
+  id = "#{env}_#{hypervisor_name}"
+  unless HYPERVISORS[id]
+    error "Unknown hypervisor #{hypervisor_name}" unless TOPOLOGY[env][:hypervisors] && TOPOLOGY[env][:hypervisors][hypervisor_name]
+    params = TOPOLOGY[env][:hypervisors][hypervisor_name][:params] || {}
+    params[:hypervisor_id] = id
+    type = TOPOLOGY[env][:hypervisors][hypervisor_name][:type]
+    clazz = "Hypervisor#{type.to_s.capitalize}"
+    begin
+      Object.const_get clazz
+    rescue
+      require "master-cap/hypervisors/#{type}.rb"
+    end
+    HYPERVISORS[id] = Object.const_get(clazz).new(cap, params)
+  end
+  HYPERVISORS[id]
+end
+
 Capistrano::Configuration.instance.load do
 
   namespace :vm do
@@ -36,22 +54,8 @@ Capistrano::Configuration.instance.load do
     end
 
     def get_hypervisor hypervisor_name
-      env = check_only_one_env
-      id = "#{env}_#{hypervisor_name}"
-      unless HYPERVISORS[id]
-        error "Unknown hypervisor #{hypervisor_name}" unless TOPOLOGY[env][:hypervisors] && TOPOLOGY[env][:hypervisors][hypervisor_name]
-        params = TOPOLOGY[env][:hypervisors][hypervisor_name][:params] || {}
-        params[:hypervisor_id] = id
-        type = TOPOLOGY[env][:hypervisors][hypervisor_name][:type]
-        clazz = "Hypervisor#{type.to_s.capitalize}"
-        begin
-          Object.const_get clazz
-        rescue
-          require "master-cap/hypervisors/#{type}.rb"
-        end
-        HYPERVISORS[id] = Object.const_get(clazz).new(self, params)
-      end
-      HYPERVISORS[id]
+      env = check_only_one_env nil, true
+      create_or_return_hypervisor self, env, hypervisor_name
     end
 
     def vm_exist? hypervisor_name, name
@@ -206,6 +210,12 @@ Capistrano::Configuration.instance.load do
       end
     end
 
+    task :create_new do
+      env = check_only_one_env nil, true
+      translation_strategy_class = TOPOLOGY[env][:translation_strategy_class] || 'DefaultTranslationStrategy'
+      get_hypervisor(fetch(:hypervisor, TOPOLOGY[env][:default_vm][:hypervisor])).create_new env, TOPOLOGY[env][:default_vm], Object.const_get(translation_strategy_class).new(env, TOPOLOGY[env])
+    end
+
     namespace :dns do
 
       def get_existing env
@@ -243,6 +253,19 @@ Capistrano::Configuration.instance.load do
 
     end
 
+  end
+
+end
+
+class DefaultHypervisorReader
+
+  def initialize cap, env, topology
+    @hyp = create_or_return_hypervisor cap, env, topology[:default_vm][:hypervisor]
+    @env = env
+  end
+
+  def read
+    @hyp.read_topology @env
   end
 
 end

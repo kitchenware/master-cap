@@ -63,16 +63,22 @@ Capistrano::Configuration.instance.load do
     end
   end
 
-  def check_only_one_env servers = nil
+  def check_only_one_env servers = nil, allow_empty_env = false
     servers = find_servers unless servers
     env_list = {}
     servers.each do |s|
       env, name, node = find_node(s.is_a?(String) ? s : s.host)
       env_list[env] = :toto
     end
-    error "Please, do not launch this command without env" if env_list.keys.size == 0
-    error "Please, do not launch this command on two env : #{env_list.keys.join(' ')}" if env_list.keys.size != 1
-    env = env_list.keys.first
+    unless allow_empty_env && env_list.keys.size == 0
+      error "Please, do not launch this command without env" if env_list.keys.size == 0
+      error "Please, do not launch this command on two env : #{env_list.keys.join(' ')}" if env_list.keys.size != 1
+      env = env_list.keys.first
+    else
+      error "Multiple env detected" if TOPOLOGY.keys.size > 1
+      error "No env detected" if TOPOLOGY.keys.size == 0
+      env = TOPOLOGY.keys.first
+    end
 
     check_only_one_env_callback[:proc].call(env, servers) if exists? :check_only_one_env_callback
 

@@ -52,7 +52,9 @@ class HypervisorOpenstack < Hypervisor
     raise "Please specify template_topology_file" unless @cap.exists?(:template_topology_file)
     raise "Please specify nodes" unless @cap.exists?(:nodes)
     raise "Please specify templates" unless @cap.exists?(:templates)
-    topology = YAML.load(File.read("topology/#{@cap.fetch(:template_topology_file)}.yml"))[:topology]
+    yaml = YAML.load(File.read("topology/#{@cap.fetch(:template_topology_file)}.yml"))
+    topology = yaml[:topology]
+    default_role_list = yaml[:default_role_list]
     nodes = @cap.fetch(:nodes).split(',')
     templates = @cap.fetch(:templates).split(',')
     vms = []
@@ -84,7 +86,7 @@ class HypervisorOpenstack < Hypervisor
       config['metadata']['env'] = env
       config['metadata']['name'] = n
       config['metadata']['type'] = template[:type] if template[:type]
-      config['metadata']['roles'] = JSON.dump(template[:roles]) if template[:roles]
+      config['metadata']['roles'] = JSON.dump(default_role_list + template[:roles]) if template[:roles]
       config['metadata']['recipes'] = JSON.dump(template[:recipes]) if template[:recipes]
       config['metadata']['node_override'] = JSON.dump(template[:node_override]) if template[:node_override]
       vm = nova.servers.create(config)

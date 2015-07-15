@@ -9,6 +9,7 @@ class HypervisorOpenstack < Hypervisor
   def initialize cap, params
     super(cap, params)
     require 'fog'
+    ::Excon.defaults[:ssl_verify_peer] = false if ENV["DISABLE_SSL_VERIFY"]
     @params = params
     [:keystone_url, :username, :tenant, :password].each do |x|
       @cap.error "Missing params :#{x}" unless @params.key? x

@@ -4,7 +4,8 @@ define :libvirt_network, {
   :netmask => nil,
   :bridge => nil,
   :forward => false,
-  :bind_physical => nil
+  :bind_physical => nil,
+  :disable_stp => nil,
 } do
 
   libvirt_network_params = params
@@ -27,6 +28,11 @@ define :libvirt_network, {
     script = <<-EOF
 if [ "$1" = "#{libvirt_network_params[:name]}"  -a "$2" = "started" ]; then
   brctl addif #{libvirt_network_params[:bridge]} #{libvirt_network_params[:bind_physical]}
+EOF
+
+    script << "  brctl stp #{libvirt_network_params[:bridge]} off\n" if libvirt_network_params[:disable_stp]
+
+script += <<-EOF
   ifconfig #{libvirt_network_params[:bind_physical]} up
 fi
 EOF

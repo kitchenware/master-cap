@@ -48,6 +48,11 @@ class HypervisorOpenstack < Hypervisor
     nova.list_servers.body['servers'].map{|x| x['name']}
   end
 
+  def add_network name, cidr
+    network = neutron.networks.create(:name => name)
+    subnet = neutron.subnets.create(:name => "#{name}_subnet", :network_id => network.id, :cidr => cidr, :ip_version => 4)
+  end
+
   def create_new env, default, translation_strategy
     raise "Please specify template_topology_file" unless @cap.exists?(:template_topology_file)
     raise "Please specify nodes" unless @cap.exists?(:nodes)
@@ -86,7 +91,12 @@ class HypervisorOpenstack < Hypervisor
       config['metadata']['env'] = env
       config['metadata']['name'] = n
       config['metadata']['type'] = template[:type] if template[:type]
-      config['metadata']['roles'] = JSON.dump(default_role_list + template[:roles]) if template[:roles]
+      if File.exist?("roles/#{env}.rb")
+        customer_role = [env]
+      else
+        customer_role = []
+      end
+      config['metadata']['roles'] = JSON.dump(default_role_list + template[:roles] + customer_role) if template[:roles]
       config['metadata']['recipes'] = JSON.dump(template[:recipes]) if template[:recipes]
       config['metadata']['node_override'] = JSON.dump(template[:node_override]) if template[:node_override]
       vm = nova.servers.create(config)

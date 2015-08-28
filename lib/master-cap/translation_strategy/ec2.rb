@@ -24,6 +24,7 @@ class Ec2TranslationStrategy
     node = @topology[:topology][name]
     return {:hostname => node[:public_hostname]} if (type == :admin || type == :nat) && node[:public_hostname]
     return {:ip => node[:private_ip]} if type == :user && node[:private_ip]
+    return {:ip => node[:public_hostname]} if type == :user && !node[:private_ip]
     raise "No ip #{type} for node #{name}"
   end
 

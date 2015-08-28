@@ -29,6 +29,32 @@ class HypervisorGce < Hypervisor
     @flavors ||= connection.flavors.all
   end
 
+  def pretty_flavors
+    flavor_list = []
+    zones = []
+    flavors.each do |f|
+      flavor = {}
+      flavor[:name] = f.name
+      flavor[:zone] = f.zone
+      zones << f.zone
+      flavor[:description] = f.description
+      flavor_list << flavor
+    end
+
+    uniq_zones = zones.uniq
+
+    uniq_zones.each do |zone|
+      zone_flavors = []
+      flavor_list.each do |f|
+        zone_flavors << f if f[:zone] == zone
+      end
+      puts "Zone : #{zone}"
+      zone_flavors.each do |f|
+        puts "\t #{f[:name]} : #{f[:description]}"
+      end
+    end
+  end
+
   def images
     @images ||= connection.images.all
   end

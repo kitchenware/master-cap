@@ -36,6 +36,12 @@ class HypervisorOpenstack < Hypervisor
     @flavors ||= nova.flavors.to_a
   end
 
+  def pretty_flavors
+    flavors.each do |f|
+      puts "\t #{f.name} : #{f.vcpus} CPUs #{f.ram} RAM" unless f.name =~ /win/
+    end
+  end
+
   def images
     @images ||= nova.images.to_a
   end

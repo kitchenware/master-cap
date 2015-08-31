@@ -98,7 +98,7 @@ class HypervisorGce < Hypervisor
       image_ref = images.find{|x| x.name == config[:image]}
       raise "Unkown image #{config[:image]}" unless image_ref
       disk = connection.disks.create({
-        :name => n,
+        :name => "#{n}-#{env}",
         :size_gb => config[:disk_size],
         :zone_name => config[:zone_name],
         :source_image => image_ref.name,
@@ -107,7 +107,7 @@ class HypervisorGce < Hypervisor
 
       disk.wait_for { disk.ready? }
 
-      config[:disks] = [disk]
+      config[:disks] = [disk.get_as_boot_disk(true)]
       if config[:network]
         network_ref = networks.find{|x| x.name == config[:network]}
         config[:network] = network_ref.name
@@ -126,6 +126,7 @@ class HypervisorGce < Hypervisor
       config['metadata']['recipes'] = JSON.dump(template[:recipes]) if template[:recipes]
       config['metadata']['node_override'] = JSON.dump(template[:node_override]) if template[:node_override]
       vm = connection.servers.create(config)
+      vm.set_scheduling 'MIGRATE', true, false
       vms << vm
       ssh_wait << [config[:ssh_user], vm] if config[:ssh_user]
     end
@@ -152,12 +153,13 @@ class HypervisorGce < Hypervisor
   def delete_vms l, no_dry
     return unless no_dry
     to_be_wait = []
+    disk_to_delete = []
     connection.servers.each do |x|
       l.each do |name, vm|
         if x.name == name
-          p "DISKS : #{x.disks}"
           puts "Deleting #{name}"
           x.destroy
+          disk_to_delete << name
           to_be_wait << x
         end
       end
@@ -175,6 +177,9 @@ class HypervisorGce < Hypervisor
       end
       break if ok
       sleep 5
+    end
+    disk_to_delete.each do |dname|
+      connection.disks.find {|disk| disk.name == dname }.destroy
     end
   end
 

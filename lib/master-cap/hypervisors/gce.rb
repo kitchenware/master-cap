@@ -102,6 +102,7 @@ class HypervisorGce < Hypervisor
         :size_gb => config[:disk_size],
         :zone_name => config[:zone_name],
         :source_image => image_ref.name,
+        :autoDelete => true,
       })
 
       disk.wait_for { disk.ready? }
@@ -142,7 +143,7 @@ class HypervisorGce < Hypervisor
       puts "Waiting ssh for all vms"
       ssh_wait.each do |user, vm|
         puts "Waiting #{vm.name}, #{public_ip(vm)}"
-        wait_ssh public_ip(vm), user
+        wait_ssh public_ip(vm), user, 90
       end
     end
     puts "Done."
@@ -154,6 +155,7 @@ class HypervisorGce < Hypervisor
     connection.servers.each do |x|
       l.each do |name, vm|
         if x.name == name
+          p "DISKS : #{x.disks}"
           puts "Deleting #{name}"
           x.destroy
           to_be_wait << x

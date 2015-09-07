@@ -75,10 +75,15 @@ class HypervisorKvm < Hypervisor
   <target dev='vda' bus='virtio'/>
 </disk>
 EOF
-
+      disk_index = 0
       if vm[:vm][:disks]
-        vm[:vm][:disks].each_with_index do |size, index|
-          device = "vd#{('b'.ord + index).chr}"
+        vm[:vm][:disks].each do |size|
+          while true
+            device = "vd#{('b'.ord + disk_index).chr}"
+            break unless vm[:vm][:block_devices]
+            break unless vm[:vm][:block_devices][device] || vm[:vm][:block_devices][device.to_sym]
+            disk_index += 1
+          end
           n = "#{name}_#{device}.qcow2"
           puts "Creating disk #{n} : #{size}"
           @ssh.exec "virsh vol-create-as default --format qcow2 --capacity #{size} --name #{n}"
@@ -238,8 +243,14 @@ EOF
       disks = @ssh.capture "virsh dumpxml #{name} | grep source | grep file"
       disks = disks.split("\n").map{|x| File.basename(x.match(/file=.(.*\.qcow2)/)[1])}
       if vm[:vm][:disks]
-        vm[:vm][:disks].each_with_index do |size, index|
-          device = "vd#{('b'.ord + index).chr}"
+        disk_index = 0
+        vm[:vm][:disks].each do |size|
+          while true
+            device = "vd#{('b'.ord + disk_index).chr}"
+            break unless vm[:vm][:block_devices]
+            break unless vm[:vm][:block_devices][device] || vm[:vm][:block_devices][device.to_sym]
+            disk_index += 1
+          end
           n = "#{name}_#{device}.qcow2"
           unless disks.include? n
             puts "Adding disk #{size} on #{name}"

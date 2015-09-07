@@ -216,6 +216,11 @@ Capistrano::Configuration.instance.load do
       get_hypervisor(fetch(:hypervisor, TOPOLOGY[env][:default_vm][:hypervisor])).create_new env, TOPOLOGY[env][:default_vm], Object.const_get(translation_strategy_class).new(env, TOPOLOGY[env])
     end
 
+    task :list_flavors do
+      env = check_only_one_env nil, true
+      flavors = get_hypervisor(fetch(:hypervisor, TOPOLOGY[env][:default_vm][:hypervisor])).pretty_flavors
+    end
+
     namespace :dns do
 
       def get_existing env

@@ -49,7 +49,7 @@ class HypervisorKvm < Hypervisor
     l.each do |name, vm|
       puts "Creating #{name} on #{@params[:hypervisor_id]}"
       user = @cap.fetch(:user)
-      ssh_keys = vm[:vm][:ssh_keys]
+      ssh_keys = vm[:vm][:ssh_keys] || []
       vol_source = vm[:vm][:vol_source]
       machine_type = vm[:vm][:machine_type] || "pc-1.3"
       pool = vm[:vm][:pool] || "default"
@@ -215,7 +215,8 @@ EOF
       @ssh.exec "cat #{tmp_dir}/etc/passwd | grep ^#{user} || sudo chroot #{tmp_dir} useradd #{user} --shell /bin/bash --create-home --home /home/#{user}"
       @ssh.exec "chroot #{tmp_dir} mkdir -p /home/#{user}/.ssh"
       @ssh.exec "chroot #{tmp_dir} chown -R #{user} /home/#{user}/.ssh"
-      @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", ssh_keys.join("\n")
+      current_keys = @ssh.capture "cat #{tmp_dir}/home/#{user}/.ssh/authorized_keys || true"
+      @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", (current_keys.split("\n") + ssh_keys).uniq.join("\n")
       @ssh.exec "chroot #{tmp_dir} which sudo || sudo chroot #{tmp_dir} apt-get install sudo -y"
       @ssh.exec "cat #{tmp_dir}/etc/sudoers | grep \"^#{user}\" || echo '#{user}   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a #{tmp_dir}/etc/sudoers"
 

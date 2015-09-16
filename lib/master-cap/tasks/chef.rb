@@ -66,23 +66,6 @@ Capistrano::Configuration.instance.load do
 
     end
 
-    task :upload_secured_roles, :roles => :linux_chef do
-      env = check_only_one_env
-      if TOPOLOGY[env][:secured_roles] && ENV['NO_SECURED_ROLES'].nil?
-        path = ENV["SECURED_ROLES_PATH"] || TOPOLOGY[env][:secured_roles]
-        if File.exists? path
-          Dir["#{path}/#{env}*"].each do |x|
-            run "sudo sh -c 'umask 0077 && tee /opt/master-chef/secured_roles/#{File.basename(x)} > /dev/null'", :data => File.read(x)
-            ENV["SECURED_ROLES_PATH"] = '/opt/master-chef/secured_roles'
-          end
-        end
-      end
-    end
-
-    def get_secured_roles_path
-      ENV["SECURED_ROLES_PATH"] ? "SECURED_ROLES_PATH=#{ENV["SECURED_ROLES_PATH"]} " : ""
-    end
-
     task :upload_topology, :roles => :linux_chef  do
       env = check_only_one_env
 
@@ -94,13 +77,12 @@ Capistrano::Configuration.instance.load do
 
     task :default, :roles => chef_role  do
       upload_topology
-      secured_roles = upload_secured_roles
       upload_git_tag_override
       n = []
       find_nodes(:roles => chef_role).each do |env, node, s|
         n << node[:topology_name]
       end
-      prefix = get_prefix + get_secured_roles_path + " PARALLEL_NODES=#{n.join(',')}"
+      prefix = get_prefix + " PARALLEL_NODES=#{n.join(',')}"
       run "#{prefix} /opt/master-chef/bin/master-chef.sh"
     end
 
@@ -114,10 +96,8 @@ Capistrano::Configuration.instance.load do
 
     task :local, :roles => chef_role  do
       upload_topology
-      secured_roles = upload_secured_roles
       find_servers(:roles => chef_role).each do |x|
         prefix = ""
-        prefix += get_secured_roles_path
         prefix += "PROXY=#{http_proxy} " if exists? :http_proxy
         prefix += "PROXY_COMMAND='#{ssh_options[:proxy].command_line_template}' " if exists?(:ssh_options) && ssh_options[:proxy]
         command = "sh -c \"#{prefix} #{master_chef_path}/runtime/chef_local.rb #{x} #{git_repos_manager.compute_local_path}\""

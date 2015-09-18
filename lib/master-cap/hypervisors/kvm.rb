@@ -61,6 +61,10 @@ class HypervisorKvm < Hypervisor
       network_dns = vm[:vm][:network_dns] || network_gateway
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
 
+      unless @ssh.capture("virsh vol-list --pool #{pool} | grep #{name}.qcow2 || true").empty?
+        @ssh.exec "virsh vol-delete --pool #{pool} #{name}.qcow2"
+      end
+
       puts "Cloning disk from #{vol_source} to #{name}.qcow2"
       @ssh.exec "virsh vol-clone #{vol_source} #{name}.qcow2 --pool #{pool}"
 
@@ -101,6 +105,16 @@ EOF
 
       if vm[:vm][:block_devices]
         vm[:vm][:block_devices].each do |name, v|
+          if v[:dev]
+          elsif v[:size] && v[:vg_source]
+            n = "#{v[:vg_source]}-#{name}"
+            if @ssh.capture("lvs | grep #{n} || true").empty?
+              @ssh.exec "lvcreate -n #{n} -L #{v[:size]} #{v[:vg_source]}"
+            end
+            v[:dev] = "/dev/mapper/#{v[:vg_source]}-#{n.gsub('-', '--')}"
+          else
+            raise "Not enough options for block devices #{JSON.dump(v)}"
+          end
           puts "Adding #{name} : #{v[:dev]}"
           disks += <<-EOF
 <disk type='block' device='disk'>
@@ -282,10 +296,15 @@ EOF
       puts "Deleting #{name} on #{@params[:hypervisor_id]}"
       disks = @ssh.capture "virsh dumpxml #{name} | grep source | grep file"
       disks = disks.split("\n").map{|x| File.basename(x.match(/file=.(.*\.qcow2)/)[1])}
+      lvs = @ssh.capture "virsh dumpxml #{name} | grep mapper || true"
+      lvs = lvs.split("\n").map{|x| x.match(/dev='([^']+)'/)[1]}
       @ssh.exec "virsh destroy #{name} || true"
       @ssh.exec "virsh undefine #{name}"
       disks.each do |x|
         @ssh.exec "virsh vol-delete #{x} --pool #{pool}"
+      end
+      lvs.each do |x|
+        @ssh.exec "lvremove --force #{x}"
       end
     end
   end

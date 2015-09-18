@@ -104,10 +104,10 @@ EOF
       end
 
       if vm[:vm][:block_devices]
-        vm[:vm][:block_devices].each do |name, v|
+        vm[:vm][:block_devices].each do |disk_name, v|
           if v[:dev]
           elsif v[:size] && v[:vg_source]
-            n = "#{v[:vg_source]}-#{name}"
+            n = "#{name}-#{disk_name}"
             if @ssh.capture("lvs | grep #{n} || true").empty?
               @ssh.exec "lvcreate -n #{n} -L #{v[:size]} #{v[:vg_source]}"
             end
@@ -115,12 +115,12 @@ EOF
           else
             raise "Not enough options for block devices #{JSON.dump(v)}"
           end
-          puts "Adding #{name} : #{v[:dev]}"
+          puts "Adding #{disk_name} : #{v[:dev]}"
           disks += <<-EOF
 <disk type='block' device='disk'>
   <driver name='qemu' type='raw'/>
   <source dev='#{v[:dev]}'/>
-  <target dev='#{name}' bus='virtio'/>
+  <target dev='#{disk_name}' bus='virtio'/>
 </disk>
 EOF
           if v[:fstype] && v[:format_fs]

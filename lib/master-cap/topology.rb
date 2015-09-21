@@ -2,6 +2,7 @@
 require_relative 'topologies/directory'
 
 TOPOLOGY = {}
+CHECK_ONLY_ONE_ENV_CALLBACK_CALLED = []
 
 Capistrano::Configuration.instance.load do
 
@@ -80,7 +81,10 @@ Capistrano::Configuration.instance.load do
       env = TOPOLOGY.keys.first
     end
 
-    check_only_one_env_callback[:proc].call(env, servers) if exists? :check_only_one_env_callback
+    if exists?(:check_only_one_env_callback) && ! CHECK_ONLY_ONE_ENV_CALLBACK_CALLED.include?(env)
+      check_only_one_env_callback[:proc].call(env, servers)
+      CHECK_ONLY_ONE_ENV_CALLBACK_CALLED << env
+    end
 
     env
   end

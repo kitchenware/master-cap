@@ -26,13 +26,20 @@ Capistrano::Configuration.instance.load do
       end
       env_to_load.uniq!
     end
-    env_to_load.each do |f|
+    while ! env_to_load.empty?
+      f = env_to_load.shift
       next if f =~ /.inc.yml/
       env = File.basename(f).split('.')[0]
       puts "Loading file #{f}"
       TOPOLOGY[env] = YAML.load(File.read(f))
 
       load_included_files env, topology_directory
+      if TOPOLOGY[env][:linked_topologies]
+        TOPOLOGY[env][:linked_topologies].keys.each do |e|
+          next if TOPOLOGY[e] || env_to_load.include?(e)
+          env_to_load << "#{topology_directory}/#{e}.yml"
+        end
+      end
 
       translation_strategy_class = TOPOLOGY[env][:translation_strategy_class] || 'DefaultTranslationStrategy'
       TOPOLOGY[env][:translation_strategy] = Object.const_get(translation_strategy_class).new(env, TOPOLOGY[env])
@@ -99,6 +106,15 @@ Capistrano::Configuration.instance.load do
       end
 
     end
+
+    TOPOLOGY.keys.each do |env|
+      if TOPOLOGY[env][:linked_topologies]
+        TOPOLOGY[env][:linked_topologies].keys.each do |e|
+          TOPOLOGY[env][:linked_topologies][e] = TOPOLOGY[e.to_s][:topology]
+        end
+      end
+    end
+
   end
 
   def load_cap_override env

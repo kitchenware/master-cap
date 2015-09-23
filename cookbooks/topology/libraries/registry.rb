@@ -207,7 +207,13 @@ class RegistryMasterCap < Registry
   end
 
   def find_hostname(n)
-    node.topology[n]["topology_hostname"]
+    return node.topology[n]["topology_hostname"] if node.topology[n]
+    if node[:linked_topologies]
+      node.linked_topologies.values.each do |l|
+        return l[n]["topology_hostname"] if l[n]
+      end
+    end
+    raise "Unable to find name for #{n}"
   end
 
   def encode(s)
@@ -260,9 +266,25 @@ class RegistryMasterCap < Registry
     only_ip ? c[:ip] : c[:hostname] || c[:ip]
   end
 
+  def iterate_on_topoloy
+    already_done = []
+    node.topology.each_pair do |node_name, node_config|
+      raise "Duplicated name on topology" if already_done.include? node_name
+      yield node_name, node_config
+    end
+    if node[:linked_topologies]
+      node.linked_topologies.values.each do |l|
+        l.each_pair do |node_name, node_config|
+          raise "Duplicated name on topology" if already_done.include? node_name
+          yield node_name, node_config
+        end
+      end
+    end
+  end
+
   def find_localizers_by_role(role)
     nodes = []
-    node.topology.each_pair do |node_name, node_config|
+    iterate_on_topoloy do |node_name, node_config|
       (node_config[:localizers] || []).each do |r|
         nodes << {'node_name' => node_name, 'layer' => LAYER_HIGH, 'node_config' => node_config} if r.to_sym == role
       end
@@ -279,7 +301,7 @@ class RegistryMasterCap < Registry
 
   def find_nodes_by_role(role)
     nodes = {}
-    node.topology.each_pair do |node_name, node_config|
+    iterate_on_topoloy do |node_name, node_config|
       (node_config[:roles] || []).each do |r|
         nodes[node_name] = node_config if r.to_sym == role
       end

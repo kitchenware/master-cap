@@ -7,6 +7,7 @@ if File.exist? topology_file
 
   topology = JSON.parse(File.read(topology_file), :symbolize_names => true)
   node.set[:topology] = topology[:topology]
+  node.set[:linked_topologies] = topology[:linked_topologies] if topology[:linked_topologies]
   node.set[:apps] = topology[:apps] if topology[:apps]
 
   if topology[:node_override]

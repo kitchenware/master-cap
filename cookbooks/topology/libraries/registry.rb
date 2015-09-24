@@ -270,12 +270,14 @@ class RegistryMasterCap < Registry
     already_done = []
     node.topology.each_pair do |node_name, node_config|
       raise "Duplicated name on topology" if already_done.include? node_name
+      already_done << node_name
       yield node_name, node_config
     end
     if node[:linked_topologies]
       node.linked_topologies.values.each do |l|
         l.each_pair do |node_name, node_config|
           raise "Duplicated name on topology" if already_done.include? node_name
+          already_done << node_name
           yield node_name, node_config
         end
       end

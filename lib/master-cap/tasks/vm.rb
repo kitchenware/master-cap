@@ -236,18 +236,25 @@ Capistrano::Configuration.instance.load do
         list
       end
 
-      task :add_if_vm_exist do
+      def each_dns
         env = check_only_one_env
-        if TOPOLOGY[env][:dns_provider]
-          dns = get_dns TOPOLOGY[env][:dns_provider]
+        providers = {}
+        providers = TOPOLOGY[env][:dns_providers] if TOPOLOGY[env][:dns_providers]
+        providers = {:default => TOPOLOGY[env][:dns_provider]} if TOPOLOGY[env][:dns_provider]
+        providers.keys.sort.each do |k|
+          dns = get_dns providers[k]
+          yield env, dns
+        end
+      end
+
+      task :add_if_vm_exist do
+        each_dns do |env, dns|
           dns.ensure_exists get_existing(env), exists?(:no_dry)
         end
       end
 
       task :remove_if_vm_not_exist do
-        env = check_only_one_env
-        if TOPOLOGY[env][:dns_provider]
-          dns = get_dns TOPOLOGY[env][:dns_provider]
+        each_dns do |env, dns|
           list = []
           for_not_existing do |hyp, l, dry|
             list += hyp.dns_ips l, true

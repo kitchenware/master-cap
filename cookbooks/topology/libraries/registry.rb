@@ -180,6 +180,15 @@ class RegistryMasterCap < Registry
     result
   end
 
+  def find_vip(vip_name)
+    vips = find_localizers_by_role(vip_name.to_sym)
+    max = vips.map { |x| x["layer"] }.max
+    vips.reject! { |x| x["layer"] != max }
+    raise "Vip not found with localizer [#{vip_name}]" if vips.empty?
+    raise "Too many vip with localizer [#{vip_name}]" if vips.length > 1
+    {:name => vips.first["node_name"], :config => vips.first["node_config"]}
+  end
+
   private
 
   @@extensions_loaded = []

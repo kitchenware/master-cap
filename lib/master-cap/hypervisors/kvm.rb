@@ -221,20 +221,20 @@ EOF
       @ssh.scp "#{tmp_dir}/etc/network/interfaces", iface
       @ssh.exec "rm #{tmp_dir}/etc/resolv.conf"
       if network_dns
-        @ssh.exec "echo nameserver #{network_dns} | sudo tee #{tmp_dir}/etc/resolv.conf"
+        @ssh.exec "echo nameserver #{network_dns} | sudo tee #{tmp_dir}/etc/resolv.conf > /dev/null"
       else
         @ssh.exec "echo '' | sudo tee #{tmp_dir}/etc/resolv.conf"
       end
 
-      @ssh.exec "cat #{tmp_dir}/etc/passwd | grep ^#{user} || sudo chroot #{tmp_dir} useradd #{user} --shell /bin/bash --create-home --home /home/#{user}"
+      @ssh.exec "cat #{tmp_dir}/etc/passwd | grep ^#{user} > /dev/null || sudo chroot #{tmp_dir} useradd #{user} --shell /bin/bash --create-home --home /home/#{user}"
       @ssh.exec "chroot #{tmp_dir} mkdir -p /home/#{user}/.ssh"
       @ssh.exec "chroot #{tmp_dir} chown -R #{user} /home/#{user}/.ssh"
       current_keys = @ssh.capture "cat #{tmp_dir}/home/#{user}/.ssh/authorized_keys || true"
       @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", (current_keys.split("\n") + ssh_keys).uniq.join("\n")
-      @ssh.exec "chroot #{tmp_dir} which sudo || sudo chroot #{tmp_dir} apt-get install sudo -y"
-      @ssh.exec "cat #{tmp_dir}/etc/sudoers | grep \"^#{user}\" || echo '#{user}   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a #{tmp_dir}/etc/sudoers"
+      @ssh.exec "chroot #{tmp_dir} which sudo > /dev/null || sudo chroot #{tmp_dir} apt-get install sudo -y"
+      @ssh.exec "cat #{tmp_dir}/etc/sudoers | grep \"^#{user}\" > /dev/null || echo '#{user}   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a #{tmp_dir}/etc/sudoers > /dev/null"
 
-      @ssh.exec "chroot #{tmp_dir} which curl || sudo chroot #{tmp_dir} apt-get install curl -y"
+      @ssh.exec "chroot #{tmp_dir} which curl > /dev/null || sudo chroot #{tmp_dir} apt-get install curl -y"
 
       @ssh.exec "umount #{tmp_dir}"
       @ssh.exec "qemu-nbd --disconnect /dev/nbd0"

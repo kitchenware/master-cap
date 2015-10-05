@@ -3,6 +3,9 @@ require 'yaml'
 require 'erubis'
 require 'deep_merge'
 
+NODES_LIST={}
+ROLES_MAP={}
+
 Capistrano::Configuration.instance.load do
 
   topology_directory = fetch(:topology_directory, 'topology')
@@ -13,6 +16,7 @@ Capistrano::Configuration.instance.load do
 
   task :load_topology_directory do
     env_to_load = []
+    linked_topologies = []
     if exists? :no_lazy_load
       env_to_load = env_list
     else
@@ -38,14 +42,15 @@ Capistrano::Configuration.instance.load do
         TOPOLOGY[env][:linked_topologies].keys.each do |e|
           next if TOPOLOGY[e] || env_to_load.include?(e)
           env_to_load << "#{topology_directory}/#{e}.yml"
+          linked_topologies << e.to_s
         end
       end
 
       translation_strategy_class = TOPOLOGY[env][:translation_strategy_class] || 'DefaultTranslationStrategy'
       TOPOLOGY[env][:translation_strategy] = Object.const_get(translation_strategy_class).new(env, TOPOLOGY[env])
 
-      nodes = []
-      roles_map = Hash.new { |hash, key| hash[key] = [] }
+      NODES_LIST[env] = []
+      ROLES_MAP[env] = Hash.new { |hash, key| hash[key] = [] }
 
       class SimpleTopologyReader
 
@@ -76,33 +81,52 @@ Capistrano::Configuration.instance.load do
         node_roles += v[:roles].map{|x| x.to_sym} if v[:roles]
         node_roles << v[:type].to_sym if v[:type]
         n = {:name => k.to_s, :host => v[:admin_hostname], :roles => node_roles}
-        nodes << n
+        NODES_LIST[env] << n
 
-        task v[:capistrano_name] do
-          server n[:host], *node_roles if n[:host]
-          load_cap_override env
-        end
+        unless linked_topologies.include? env
 
-        node_roles.each do |r|
-          roles_map[r] << n
+          task v[:capistrano_name] do
+            task_name = current_task.name.to_s
+            NODES_LIST.each do |k, v|
+              v.each do |n|
+                if "#{n[:name]}-#{k}" == task_name
+                  server n[:host], *(n[:roles]) if n[:host]
+                  load_cap_override k
+                  break
+                end
+              end
+            end
+          end
+
+          node_roles.each do |r|
+            ROLES_MAP[env][r.to_s] << n
+          end
+
         end
 
       end
 
-      roles_map.each do |r, v|
-        task "role-#{r}-#{env}" do
-          v.each do |k|
-            server k[:host], *(k[:roles]) if k[:host]
-            load_cap_override env
+      unless linked_topologies.include? env
+
+        ROLES_MAP[env].each do |r, v|
+          task "role-#{r}-#{env}" do
+            task_name = current_task.name.to_s.match(/role-(.*)-(.*)/)
+            local_role, local_env = $1, $2
+            ROLES_MAP[local_env][local_role].each do |k|
+              server k[:host], *(k[:roles]) if k[:host]
+              load_cap_override local_env
+            end
           end
         end
-      end
 
-      task env do
-        nodes.each do |k|
-          server k[:host], *(k[:roles]) if k[:host]
-          load_cap_override env
+        task env do
+          task_name = current_task.name.to_s
+          NODES_LIST[task_name].each do |k|
+            server k[:host], *(k[:roles]) if k[:host]
+            load_cap_override task_name
+          end
         end
+
       end
 
     end
@@ -113,6 +137,12 @@ Capistrano::Configuration.instance.load do
           TOPOLOGY[env][:linked_topologies][e] = TOPOLOGY[e.to_s][:topology]
         end
       end
+    end
+
+    linked_topologies.each do |e|
+      TOPOLOGY.delete e.to_s
+      NODES_LIST.delete e.to_s
+      ROLES_MAP.delete e.to_s
     end
 
   end

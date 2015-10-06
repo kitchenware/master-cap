@@ -61,6 +61,8 @@ class HypervisorKvm < Hypervisor
       network_dns = vm[:vm][:network_dns] || network_gateway
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
 
+      @ssh.exec("virsh pool-refresh #{pool}")
+
       unless @ssh.capture("virsh vol-list --pool #{pool} | grep #{name}.qcow2 || true").empty?
         @ssh.exec "virsh vol-delete --pool #{pool} #{name}.qcow2"
       end
@@ -270,6 +272,13 @@ EOF
           unless disks.include? n
             puts "Adding disk #{size} on #{name}"
             next unless no_dry
+
+            @ssh.exec("virsh pool-refresh #{pool}")
+
+            unless @ssh.capture("virsh vol-list --pool #{pool} | grep #{n} || true").empty?
+              @ssh.exec "virsh vol-delete --pool #{pool} #{n}"
+            end
+
             @ssh.exec "virsh vol-create-as default --format qcow2 --capacity #{size} --name #{n}"
             d = @ssh.capture "virsh vol-dumpxml #{n} --pool #{pool} | grep path"
             d = d.match(/<path>(.*)<\/path>/)[1]
@@ -281,7 +290,7 @@ EOF
 </disk>
 EOF
             @ssh.scp "/tmp/virsh_disk.xml", disk
-            @ssh.exec "virsh attach-device #{name} /tmp/virsh_disk.xml"
+            @ssh.exec "virsh attach-device --persistent #{name} /tmp/virsh_disk.xml"
             @ssh.exec "rm /tmp/virsh_disk.xml"
           end
         end

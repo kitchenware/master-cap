@@ -27,6 +27,15 @@ define :libvirt_network, {
 
     script = <<-EOF
 if [ "$1" = "#{libvirt_network_params[:name]}"  -a "$2" = "started" ]; then
+EOF
+    if libvirt_network_params[:bind_physical].match(/^([^\.]+)\.([^\.]+)/)
+      interface, vlan = $1, $2
+      script += <<-EOF
+  cat /proc/net/vlan/config | grep #{libvirt_network_params[:bind_physical]} > /dev/null || vconfig add #{interface} #{vlan}
+EOF
+    end
+
+    script += <<-EOF
   brctl addif #{libvirt_network_params[:bridge]} #{libvirt_network_params[:bind_physical]}
 EOF
 

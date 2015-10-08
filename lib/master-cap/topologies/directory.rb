@@ -80,7 +80,7 @@ Capistrano::Configuration.instance.load do
         node_roles = []
         node_roles += v[:roles].map{|x| x.to_sym} if v[:roles]
         node_roles << v[:type].to_sym if v[:type]
-        n = {:name => k.to_s, :host => v[:admin_hostname], :roles => node_roles}
+        n = {:name => k.to_s, :host => v[:admin_hostname], :roles => node_roles, :capistrano_name => v[:capistrano_name]}
         NODES_LIST[env] << n
 
         unless linked_topologies.include? env
@@ -89,7 +89,7 @@ Capistrano::Configuration.instance.load do
             task_name = current_task.name.to_s
             NODES_LIST.each do |k, v|
               v.each do |n|
-                if "#{n[:name]}-#{k}" == task_name
+                if n[:capistrano_name] == task_name
                   server n[:host], *(n[:roles]) if n[:host]
                   load_cap_override k
                   break

@@ -4,34 +4,38 @@ package "libvirt-bin"
 
 include_recipe "master_cap_lxc::ksm"
 
-if node.master_cap_kvm.hugepages == "auto"
-  nr_hugepages = (node["memory"]["total"].delete("kB").to_i / 1024 / 2 * node.master_cap_kvm.hugepages_ratio).to_i
-else
-  nr_hugepages = node.master_cap_kvm.hugepages
-end
+unless node.master_cap_kvm.hugepages == "disable"
 
-template "/etc/sysctl.d/10-hugepages.conf" do
-  mode '0644'
-  notifies :restart, "service[procps]", :immediately
-  variables :nr_hugepages => nr_hugepages
-end
+  if node.master_cap_kvm.hugepages == "auto"
+    nr_hugepages = (node["memory"]["total"].delete("kB").to_i / 1024 / 2 * node.master_cap_kvm.hugepages_ratio).to_i
+  else
+    nr_hugepages = node.master_cap_kvm.hugepages
+  end
 
-directory "/hugepages" do
-  owner "root"
-  group "root"
-  mode "0755"
-end
+  template "/etc/sysctl.d/10-hugepages.conf" do
+    mode '0644'
+    notifies :restart, "service[procps]", :immediately
+    variables :nr_hugepages => nr_hugepages
+  end
 
-mount "/hugepages" do
-  action [:enable]
-  device "hugetlbfs"
-  device_type :device
-  fstype "hugetlbfs"
-end
+  directory "/hugepages" do
+    owner "root"
+    group "root"
+    mode "0755"
+  end
 
-execute "mount-hugetlbfs" do
-  command "mount -t hugetlbfs hugetlbfs /hugepages"
-  not_if  "mount | grep -q hugetlbfs"
+  mount "/hugepages" do
+    action [:enable]
+    device "hugetlbfs"
+    device_type :device
+    fstype "hugetlbfs"
+  end
+
+  execute "mount-hugetlbfs" do
+    command "mount -t hugetlbfs hugetlbfs /hugepages"
+    not_if  "mount | grep -q hugetlbfs"
+  end
+
 end
 
 storage = <<-EOF

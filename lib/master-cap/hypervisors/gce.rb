@@ -9,6 +9,7 @@ class HypervisorGce < Hypervisor
   def initialize cap, params
     super(cap, params)
     require 'fog'
+    ::Excon.defaults[:ssl_verify_peer] = false if ENV["DISABLE_SSL_VERIFY"]
     @params = params
     [:google_project, :google_client_email, :google_json_key_location].each do |x|
       @cap.error "Missing params :#{x}" unless @params.key? x

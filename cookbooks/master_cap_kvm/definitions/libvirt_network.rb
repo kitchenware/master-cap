@@ -5,7 +5,7 @@ define :libvirt_network, {
   :bridge => nil,
   :forward => false,
   :bind_physical => nil,
-  :disable_stp => nil,
+  :disable_stp => true,
 } do
 
   libvirt_network_params = params
@@ -31,17 +31,26 @@ EOF
     if libvirt_network_params[:bind_physical].match(/^([^\.]+)\.([^\.]+)/)
       interface, vlan = $1, $2
       script += <<-EOF
+  modprobe 8021q
+  echo "Checking interface #{libvirt_network_params[:bind_physical]}"
   cat /proc/net/vlan/config | grep #{libvirt_network_params[:bind_physical]} > /dev/null || vconfig add #{interface} #{vlan}
 EOF
     end
 
     script += <<-EOF
+  echo "Adding #{libvirt_network_params[:bind_physical]} to #{libvirt_network_params[:bridge]}"
   brctl addif #{libvirt_network_params[:bridge]} #{libvirt_network_params[:bind_physical]}
 EOF
 
-    script << "  brctl stp #{libvirt_network_params[:bridge]} off\n" if libvirt_network_params[:disable_stp]
+    if libvirt_network_params[:disable_stp]
+      script << <<-EOF
+  echo "Disabling stp on #{libvirt_network_params[:bridge]}"
+  brctl stp #{libvirt_network_params[:bridge]} off
+EOF
+    end
 
 script += <<-EOF
+  echo "Starting interface #{libvirt_network_params[:bind_physical]}"
   ifconfig #{libvirt_network_params[:bind_physical]} up
 fi
 EOF

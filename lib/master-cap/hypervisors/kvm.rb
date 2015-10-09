@@ -53,10 +53,10 @@ class HypervisorKvm < Hypervisor
       vol_source = vm[:vm][:vol_source]
       machine_type = vm[:vm][:machine_type] || "pc-1.3"
       pool = vm[:vm][:pool] || "default"
-      hugespages = vm[:vm][:use_hugepages] || true
+      hugespages = vm[:vm][:disable_hugepages] ? false : true
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
-      network_gateway = vm[:vm][:network_gateway]
-      network_netmask = vm[:vm][:network_netmask]
+      network_gateway = vm[:vm][:network_gateway] || vm[:vm][:network_by_bridge][vm[:vm][:network_bridge]]
+      network_netmask = vm[:vm][:network_netmask] || vm[:vm][:network_by_bridge][vm[:vm][:network_netmask]]
       network_bridge = vm[:vm][:network_bridge]
       network_dns = vm[:vm][:network_dns] || network_gateway
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
@@ -208,7 +208,7 @@ EOF
 
       tmp_dir = "/tmp/" + (0...8).map { (65 + rand(26)).chr }.join
       @ssh.exec "mkdir -p #{tmp_dir}"
-      @ssh.exec "modprobe nbd"
+      @ssh.exec "modprobe nbd max_part=8"
       @ssh.exec "umount /dev/nbd0p1 > /dev/null 2>&1 || true"
       @ssh.exec "qemu-nbd --disconnect /dev/nbd0 > /dev/null 2>&1 || true"
       @ssh.exec "qemu-nbd --connect=/dev/nbd0 #{root_disk}"

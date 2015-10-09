@@ -36,6 +36,17 @@ unless node.master_cap_kvm.hugepages == "disable"
     not_if  "mount | grep -q hugetlbfs"
   end
 
+  service "apparmor" do
+    supports :reload => true
+    action [:nothing]
+  end
+
+  execute "allow libvirt to access hugespages in apparmor" do
+    command "echo 'owner \"/hugepages/libvirt/qemu/**\" rw,' >> /etc/apparmor.d/abstractions/libvirt-qemu"
+    not_if "cat /etc/apparmor.d/abstractions/libvirt-qemu | grep hugepages/libvirt/qemu"
+    notifies :reload, "service[apparmor]"
+  end
+
 end
 
 storage = <<-EOF
@@ -57,15 +68,4 @@ EOF
 execute "create default pool" do
   command "echo \"#{storage.gsub(/\n/, '')}\" | sed -e \"s/##ID##/$(cat /etc/group | grep libvirt | head -n1 | cut -d: -f3)/\" > /tmp/storage.xml && virsh pool-define /tmp/storage.xml && virsh pool-autostart default && virsh pool-start default && rm /tmp/storage.xml"
   not_if "virsh pool-list | fgrep default | fgrep active | fgrep -q yes"
-end
-
-service "apparmor" do
-  supports :reload => true
-  action [:nothing]
-end
-
-execute "allow libvirt to access hugespages in apparmor" do
-  command "echo 'owner \"/hugepages/libvirt/qemu/**\" rw,' >> /etc/apparmor.d/abstractions/libvirt-qemu"
-  not_if "cat /etc/apparmor.d/abstractions/libvirt-qemu | grep hugepages/libvirt/qemu"
-  notifies :reload, "service[apparmor]"
 end

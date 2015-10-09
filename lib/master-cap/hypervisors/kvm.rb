@@ -55,8 +55,8 @@ class HypervisorKvm < Hypervisor
       pool = vm[:vm][:pool] || "default"
       hugespages = vm[:vm][:disable_hugepages] ? false : true
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
-      network_gateway = vm[:vm][:network_gateway] || vm[:vm][:network_by_bridge][vm[:vm][:network_bridge]]
-      network_netmask = vm[:vm][:network_netmask] || vm[:vm][:network_by_bridge][vm[:vm][:network_netmask]]
+      network_gateway = vm[:vm][:network_gateway] || vm[:vm][:network_by_bridge][vm[:vm][:network_bridge]][:network_gateway]
+      network_netmask = vm[:vm][:network_netmask] || vm[:vm][:network_by_bridge][vm[:vm][:network_netmask]][:network_netmask]
       network_bridge = vm[:vm][:network_bridge]
       network_dns = vm[:vm][:network_dns] || network_gateway
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
@@ -222,10 +222,8 @@ EOF
 
       @ssh.scp "#{tmp_dir}/etc/network/interfaces", iface
       @ssh.exec "rm #{tmp_dir}/etc/resolv.conf"
-      if network_dns
-        @ssh.exec "echo nameserver #{network_dns} | sudo tee #{tmp_dir}/etc/resolv.conf > /dev/null"
-      else
-        @ssh.exec "echo '' | sudo tee #{tmp_dir}/etc/resolv.conf"
+      network_dns.split(" ").each do |x|
+        @ssh.exec "echo nameserver #{x} | sudo tee -a #{tmp_dir}/etc/resolv.conf > /dev/null"
       end
 
       @ssh.exec "cat #{tmp_dir}/etc/passwd | grep ^#{user} > /dev/null || sudo chroot #{tmp_dir} useradd #{user} --shell /bin/bash --create-home --home /home/#{user}"

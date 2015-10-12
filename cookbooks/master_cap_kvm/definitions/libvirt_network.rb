@@ -6,6 +6,7 @@ define :libvirt_network, {
   :forward => false,
   :bind_physical => nil,
   :disable_stp => true,
+  :default_gateway => nil,
 } do
 
   libvirt_network_params = params
@@ -29,6 +30,8 @@ EOF
   modprobe 8021q
   echo "Checking interface #{libvirt_network_params[:bind_physical]}"
   cat /proc/net/vlan/config | grep #{libvirt_network_params[:bind_physical]} > /dev/null || vconfig add #{interface} #{vlan}
+  echo "Mouting sub interface"
+  ifconfig #{interface} up
 EOF
     end
 
@@ -49,6 +52,17 @@ script += <<-EOF
   ifconfig #{libvirt_network_params[:bind_physical]} up
 fi
 EOF
+
+    if libvirt_network_params[:default_gateway]
+      script << <<-EOF
+  if ip route show | grep default > /dev/null; then
+    echo "Skipping add of default gateway #{libvirt_network_params[:default_gateway]}"
+  else
+    echo "Adding default gateway to #{libvirt_network_params[:default_gateway]}"
+    ip route add default via #{libvirt_network_params[:default_gateway]}
+  fi
+EOF
+    end
 
     incremental_template_content "physical_#{libvirt_network_params[:bind_physical]}" do
       target "/etc/libvirt/hooks/network"

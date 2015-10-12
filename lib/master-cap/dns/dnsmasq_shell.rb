@@ -54,7 +54,7 @@ class DnsDnsmasqShell < BaseDns
   end
 
   def reload name
-    @ssh.exec "killall -HUP dnsmasq"
+    @ssh.exec "pkill -HUP dnsmasq"
     puts "Dnsmasq updated on #{@params[:host]} for zone #{name}"
   end
 

@@ -38,8 +38,8 @@ Capistrano::Configuration.instance.load do
       error errors if errors
     end
 
-    def get_dns config
-      unless DNS[:dns]
+    def get_dns id, config
+      unless DNS[id]
         params = config[:params] || {}
         type = config[:type]
         clazz = "Dns#{type}"
@@ -48,9 +48,9 @@ Capistrano::Configuration.instance.load do
         rescue
           require "master-cap/dns/#{type.underscore}.rb"
         end
-        DNS[:dns] = Object.const_get(clazz).new(self, params)
+        DNS[id] = Object.const_get(clazz).new(self, params)
       end
-      DNS[:dns]
+      DNS[id]
     end
 
     def get_hypervisor hypervisor_name
@@ -242,7 +242,7 @@ Capistrano::Configuration.instance.load do
         providers = TOPOLOGY[env][:dns_providers] if TOPOLOGY[env][:dns_providers]
         providers = {:default => TOPOLOGY[env][:dns_provider]} if TOPOLOGY[env][:dns_provider]
         providers.keys.sort.each do |k|
-          dns = get_dns providers[k]
+          dns = get_dns k, providers[k]
           yield env, dns
         end
       end

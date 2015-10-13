@@ -91,6 +91,9 @@ EOF
             disk_index += 1
           end
           n = "#{name}_#{device}.qcow2"
+          unless @ssh.capture("virsh vol-list --pool #{pool} | grep #{n}|| true").empty?
+            @ssh.exec "virsh vol-delete --pool #{pool} #{n}"
+          end
           puts "Creating disk #{n} : #{size}"
           @ssh.exec "virsh vol-create-as default --format qcow2 --capacity #{size} --name #{n}"
           d = @ssh.capture "virsh vol-dumpxml #{n} --pool #{pool} | grep path"
@@ -102,6 +105,7 @@ EOF
   <target dev='#{device}' bus='virtio'/>
 </disk>
 EOF
+          disk_index += 1
         end
       end
 
@@ -291,6 +295,7 @@ EOF
             @ssh.exec "virsh attach-device --persistent #{name} /tmp/virsh_disk.xml"
             @ssh.exec "rm /tmp/virsh_disk.xml"
           end
+          disk_index += 1
         end
       end
     end

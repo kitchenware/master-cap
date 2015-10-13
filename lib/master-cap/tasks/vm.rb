@@ -242,6 +242,7 @@ Capistrano::Configuration.instance.load do
         providers = TOPOLOGY[env][:dns_providers] if TOPOLOGY[env][:dns_providers]
         providers = {:default => TOPOLOGY[env][:dns_provider]} if TOPOLOGY[env][:dns_provider]
         providers.keys.sort.each do |k|
+          next if providers[k][:disabled]
           dns = get_dns k, providers[k]
           yield env, dns
         end

@@ -48,6 +48,7 @@ Capistrano::Configuration.instance.load do
     def get_prefix
       prefix = ""
       prefix += "http_proxy=#{http_proxy} https_proxy=#{http_proxy} " if exists? :http_proxy
+      prefix += "DRY_RUN=1" if exists? :dry_run
       prefix
     end
 
@@ -90,6 +91,14 @@ Capistrano::Configuration.instance.load do
       run "sudo cat /opt/chef/var/cache/chef-stacktrace.out"
     end
 
+    task :show_last_attrs, :roles => chef_role  do
+      find_nodes(:roles => chef_role).each do |env, node, s|
+        f = "#{node[:capistrano_name]}.json"
+        File.write(f, capture("sudo cat /opt/master-chef/var/last/last_attributes.json", :hosts => s))
+        puts "Last attributes for #{node[:capistrano_name]} written to #{f}"
+      end
+    end
+
     task :purge_cache, :roles => chef_role do
       run "sudo rm -rf /opt/master-chef/var/git_repos"
     end
@@ -105,7 +114,7 @@ Capistrano::Configuration.instance.load do
       end
     end
 
-  task :install, :roles => :linux_chef do
+    task :install, :roles => chef_role do
       env = check_only_one_env
       prefix = get_prefix
       prefix += "PROXY=#{http_proxy} " if exists? :http_proxy
@@ -113,7 +122,6 @@ Capistrano::Configuration.instance.load do
       version = exists?(:master_chef_hash_code) ? master_chef_hash_code : "master"
       run "#{get_prefix} curl -f -s -L http://rawgithub.com/kitchenware/master-chef/#{version}/runtime/bootstrap.sh?#{version} | #{prefix} bash"
     end
-
 
   end
 

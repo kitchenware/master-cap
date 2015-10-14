@@ -17,14 +17,21 @@ class GceTranslationStrategy
   end
 
   def ip_types
-    [:admin, :user, :nat]
+    [:admin, :user, :private]
   end
 
   def ip type, name
     node = @topology[:topology][name]
-    return {:hostname => node[:public_hostname]} if (type == :admin || type == :nat) && node[:public_hostname]
-    return {:ip => node[:private_ip]} if type == :user && node[:private_ip]
-    return {:ip => node[:public_hostname]} if type == :user && !node[:private_ip]
+    result = case type
+      when :private
+        { :ip => node[:private_ip], :hostname => node[:private_dns]}
+      when :user
+        { :ip => node[:public_hostname], :hostname => node[:public_hostname]}
+      else
+        { :ip => node[:public_hostname], :hostname => node[:public_hostname]}
+    end
+    #result = {:ip => (type == :private ? node[:private_ip] || node[:ip] : node[:ip]) || node[:hostname], :hostname => node[:private_dns] || node[:ip]} if node[:public_hostname] || node[:ip] 
+    return result
     raise "No ip #{type} for node #{name}"
   end
 

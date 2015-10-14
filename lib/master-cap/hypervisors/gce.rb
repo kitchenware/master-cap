@@ -191,6 +191,7 @@ class HypervisorGce < Hypervisor
         n = {
           :public_hostname => x.network_interfaces.first['accessConfigs'].first['natIP'],
           :private_ip => x.network_interfaces.first['networkIP'],
+          :private_dns => "#{x.name.gsub("-#{env}", "")}.#{env}.internal"
         }
         n[:type] = get_metadatas x, "type"
         n[:roles] = JSON.parse(get_metadatas(x, "roles")) if get_metadatas(x, "roles")

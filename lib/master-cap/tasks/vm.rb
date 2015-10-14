@@ -214,6 +214,9 @@ Capistrano::Configuration.instance.load do
       env = check_only_one_env nil, true
       translation_strategy_class = TOPOLOGY[env][:translation_strategy_class] || 'DefaultTranslationStrategy'
       get_hypervisor(fetch(:hypervisor, TOPOLOGY[env][:default_vm][:hypervisor])).create_new env, TOPOLOGY[env][:default_vm], Object.const_get(translation_strategy_class).new(env, TOPOLOGY[env])
+      set :no_dry, true
+      top.vm.dns.add_if_vm_exist
+      top.ssh_known_hosts.purge
     end
 
     task :list_flavors do

@@ -38,8 +38,12 @@ class Registry
       "#{scheme}://#{host}:#{port}#{path}"
     end
 
-    def to_s
+    def to_hash
       {:host => host, :port => port, :scheme => scheme, :path => path, :user => user, :password => password}
+    end
+
+    def to_s
+      to_hash.to_s
     end
 
   end

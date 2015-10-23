@@ -92,4 +92,10 @@ if node.master_cap_kvm.allow_chef_to_use_virsh
     notifies :restart, "service[libvirtd]"
   end
 
+  execute "patch libvirtd.conf for auth_unix_rw" do
+    command "sed -i 's/^#auth_unix_rw/auth_unix_rw/' /etc/libvirt/libvirtd.conf"
+    only_if "cat /etc/libvirt/libvirtd.conf | grep '#auth_unix_rw'"
+    notifies :restart, "service[libvirtd]"
+  end
+
 end

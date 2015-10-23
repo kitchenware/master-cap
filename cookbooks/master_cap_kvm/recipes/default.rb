@@ -87,7 +87,7 @@ if node.master_cap_kvm.allow_chef_to_use_virsh
   end
 
   execute "patch libvirtd.conf for unix_sock_group" do
-    command "sed -i 's/^#unix_sock_group/#unix_sock_group/' /etc/libvirt/libvirtd.conf"
+    command "sed -i 's/^#unix_sock_group/unix_sock_group/' /etc/libvirt/libvirtd.conf"
     only_if "cat /etc/libvirt/libvirtd.conf | grep '#unix_sock_group'"
     notifies :restart, "service[libvirtd]"
   end

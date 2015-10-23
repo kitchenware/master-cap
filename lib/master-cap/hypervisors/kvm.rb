@@ -55,9 +55,9 @@ class HypervisorKvm < Hypervisor
       pool = vm[:vm][:pool] || "default"
       hugespages = vm[:vm][:disable_hugepages] ? false : true
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
-      network_gateway = vm[:vm][:network_gateway] || vm[:vm][:network_by_bridge][vm[:vm][:network_bridge]][:network_gateway]
-      network_netmask = vm[:vm][:network_netmask] || vm[:vm][:network_by_bridge][vm[:vm][:network_netmask]][:network_netmask]
       network_bridge = vm[:vm][:network_bridge]
+      network_gateway = vm[:vm][:network_by_bridge] && vm[:vm][:network_by_bridge][network_bridge] && vm[:vm][:network_by_bridge][network_bridge][:network_gateway] ? vm[:vm][:network_by_bridge][network_bridge][:network_gateway] : vm[:vm][:network_gateway]
+      network_netmask = vm[:vm][:network_by_bridge] && vm[:vm][:network_by_bridge][network_bridge] && vm[:vm][:network_by_bridge][network_bridge][:network_netmask] ? vm[:vm][:network_by_bridge][network_bridge][:network_netmask] : vm[:vm][:network_netmask]
       network_dns = vm[:vm][:network_dns] || network_gateway
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
 

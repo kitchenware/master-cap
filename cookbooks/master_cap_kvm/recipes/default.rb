@@ -69,3 +69,27 @@ execute "create default pool" do
   command "echo \"#{storage.gsub(/\n/, '')}\" | sed -e \"s/##ID##/$(cat /etc/group | grep libvirt | head -n1 | cut -d: -f3)/\" > /tmp/storage.xml && virsh pool-define /tmp/storage.xml && virsh pool-autostart default && virsh pool-start default && rm /tmp/storage.xml"
   not_if "virsh pool-list | fgrep default | fgrep active | fgrep -q yes"
 end
+
+if node.master_cap_kvm.allow_chef_to_use_virsh
+
+  add_user_in_group "chef" do
+    group "libvirt"
+  end
+
+  file "#{get_home 'chef'}/.bash_profile" do
+    owner 'chef'
+    content "export LIBVIRT_DEFAULT_URI=qemu:///system"
+  end
+
+  service "libvirtd" do
+    supports :restart => true
+    action [:nothing]
+  end
+
+  execute "patch libvirtd.conf for unix_sock_group" do
+    command "sed -i 's/^#unix_sock_group/#unix_sock_group/' /etc/libvirt/libvirtd.conf"
+    only_if "cat /etc/libvirt/libvirtd.conf | grep '#unix_sock_group'"
+    notifies :restart, "service[libvirtd]"
+  end
+
+end

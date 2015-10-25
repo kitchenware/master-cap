@@ -231,7 +231,7 @@ Capistrano::Configuration.instance.load do
           hyps << hyp unless hyps.include? hyp
         end
         hyps.each do |hyp|
-          list += hyp.dns_ips TOPOLOGY[env][:topology].select{|name, node| node[:type].to_sym != :linux_chef || node[:vm][:hypervisor].to_s == 'none'}.map{|name, node| [name.to_s, node]}, true
+          list += hyp.dns_ips TOPOLOGY[env][:topology].select{|name, node| node[:type].to_sym != :linux_chef || (node[:vm] && node[:vm][:hypervisor] && node[:vm][:hypervisor].to_s == 'none')}.map{|name, node| [name.to_s, node]}, true
         end
         list
       end

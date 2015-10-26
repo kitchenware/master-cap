@@ -26,7 +26,7 @@ class GceTranslationStrategy
       when :private
         { :ip => node[:private_ip], :hostname => node[:private_dns]}
       when :user
-        { :ip => node[:public_hostname], :hostname => node[:public_hostname]}
+        { :ip => node[:public_hostname], :hostname => node[:topology_name].gsub("-#{@env}", ".#{@env}")}
       else
         { :ip => node[:public_hostname], :hostname => node[:public_hostname]}
     end

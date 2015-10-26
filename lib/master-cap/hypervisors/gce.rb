@@ -76,7 +76,7 @@ class HypervisorGce < Hypervisor
     raise "Please specify template_topology_file" unless @cap.exists?(:template_topology_file)
     raise "Please specify nodes" unless @cap.exists?(:nodes)
     raise "Please specify templates" unless @cap.exists?(:templates)
-
+=begin
     yaml = YAML.load(File.read("topology/#{@cap.fetch(:template_topology_file)}.yml"))
     topology = yaml[:topology]
     default_role_list = yaml[:default_role_list]
@@ -149,6 +149,8 @@ class HypervisorGce < Hypervisor
       end
     end
     puts "Done."
+=end
+    puts "Fake vm:create_new"
   end
 
   def delete_vms l, no_dry
@@ -180,7 +182,9 @@ class HypervisorGce < Hypervisor
       sleep 5
     end
     disk_to_delete.each do |dname|
+      puts "Deleting disk : #{dname}"
       connection.disks.find {|disk| disk.name == dname }.destroy
+      puts "Deleted disk : #{dname}"
     end
   end
 
@@ -201,6 +205,21 @@ class HypervisorGce < Hypervisor
       end
     end
     res
+  end
+
+  def dns_ips(vms, allow_not_found)
+    result = self.class.extract_dns_ips vms
+    result
+  end
+
+  def self.extract_dns_ips(vms)
+    result = []
+    vms.each do |name, config|
+      config[:host_ips].except(:admin).each do |k, v|
+        result << {:vm_name => name.to_s, :net => k, :dns => v[:hostname], :ip => v[:ip]}
+      end
+    end
+    result
   end
 
   private

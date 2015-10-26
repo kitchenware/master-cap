@@ -85,8 +85,9 @@ class DnsGoogleCloudDns < BaseDns
   end
 
   def del_record name, record
-    record = connection.records(zone: name).get(name: "#{record[:name]}.#{domain(name)}", type: 'A')
-    record.destroy if record
+    zone = connection.zones.get(name)
+    found_record = zone.records.get("#{record[:name]}.#{domain(name)}", 'A')
+    found_record.destroy if record
     raise "Record not found" unless record
   end
 

@@ -76,7 +76,6 @@ class HypervisorGce < Hypervisor
     raise "Please specify template_topology_file" unless @cap.exists?(:template_topology_file)
     raise "Please specify nodes" unless @cap.exists?(:nodes)
     raise "Please specify templates" unless @cap.exists?(:templates)
-=begin
     yaml = YAML.load(File.read("topology/#{@cap.fetch(:template_topology_file)}.yml"))
     topology = yaml[:topology]
     default_role_list = yaml[:default_role_list]
@@ -149,8 +148,6 @@ class HypervisorGce < Hypervisor
       end
     end
     puts "Done."
-=end
-    puts "Fake vm:create_new"
   end
 
   def delete_vms l, no_dry

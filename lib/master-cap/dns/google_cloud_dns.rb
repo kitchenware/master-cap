@@ -39,6 +39,10 @@ class DnsGoogleCloudDns < BaseDns
       modified = false
       l.each do |x|
         unless x[:name].include?(".internal")
+          if current.find{|dns| dns[:name] == "#{x[:name]}.#{domain(real_zone_name)}" && dns[:ip] != x[:ip]}
+            del_record real_zone_name, x if no_dry
+            puts "Deleted record #{x[:name]}.#{domain(real_zone_name)} because IP has changed (probably after vm reboot or migration)"
+          end
           unless current.find{|xx| xx[:ip] == x[:ip] && xx[:name] == "#{x[:name]}.#{domain(real_zone_name)}"}
             puts "Adding record in zone #{real_zone_name} : #{x[:name]}.#{domain(real_zone_name)} : #{x[:ip]}"
             add_record real_zone_name, x if no_dry

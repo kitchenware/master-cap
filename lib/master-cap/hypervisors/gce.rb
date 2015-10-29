@@ -154,14 +154,13 @@ class HypervisorGce < Hypervisor
     return unless no_dry
     to_be_wait = []
     disk_to_delete = []
-    connection.servers.each do |x|
-      l.each do |name, vm|
-        if x.name == name
-          puts "Deleting #{name}"
-          x.destroy
-          disk_to_delete << name
-          to_be_wait << x
-        end
+    l.each do |name, vm|
+      gce_server = @connection.servers.get(name)
+      if gce_server.name == name
+        puts "Deleting #{name}"
+        gce_server.destroy
+        disk_to_delete << name
+        to_be_wait << gce_server
       end
     end
     while true
@@ -185,8 +184,33 @@ class HypervisorGce < Hypervisor
     end
   end
 
+  def start_vms l, no_dry
+    return unless no_dry
+    l.each do |name, vm|
+      puts "Starting #{name}"
+      @connection.servers.get(name).start
+    end
+  end
+
+  def stop_vms l, no_dry
+    return unless no_dry
+    l.each do |name, vm|
+      puts "Stoping #{name}"
+      @connection.servers.get(name).stop
+    end
+  end
+
+  def reboot_vms l, no_dry
+    return unless no_dry
+    l.each do |name, vm|
+      puts "Rebooting #{name}"
+      @connection.servers.get(name).reboot
+    end
+  end
+
   def read_topology env
     res = {}
+
     server_list.each do |x|
       if x.metadata &&  linked_to_env?(x, env)
         n = {

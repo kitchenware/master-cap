@@ -143,7 +143,7 @@ class HypervisorGce < Hypervisor
     unless ssh_wait.empty?
       puts "Waiting ssh for all vms"
       ssh_wait.each do |user, vm|
-        puts "Waiting #{vm.name}, #{public_ip(vm)}"
+        puts "Waiting #{vm.name}, #{user}@#{public_ip(vm)}"
         wait_ssh public_ip(vm), user, 90
       end
     end

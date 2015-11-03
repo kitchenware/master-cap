@@ -76,6 +76,15 @@ Capistrano::Configuration.instance.load do
       upload_to_root f.path, "/opt/master-chef/etc/topology.json"
     end
 
+    task :upload_topology_local, :roles => :linux_chef  do
+      env = check_only_one_env
+
+      f = Tempfile.new "topology_env"
+      f.write JSON.dump(TOPOLOGY[env])
+      f.close
+      %x[cp #{f.path} /opt/master-chef/etc/topology.json"]
+    end
+
     task :default, :roles => chef_role  do
       upload_topology
       upload_git_tag_override

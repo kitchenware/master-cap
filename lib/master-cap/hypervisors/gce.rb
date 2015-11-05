@@ -76,7 +76,6 @@ class HypervisorGce < Hypervisor
     raise "Please specify template_topology_file" unless @cap.exists?(:template_topology_file)
     raise "Please specify nodes" unless @cap.exists?(:nodes)
     raise "Please specify templates" unless @cap.exists?(:templates)
-
     yaml = YAML.load(File.read("topology/#{@cap.fetch(:template_topology_file)}.yml"))
     topology = yaml[:topology]
     default_role_list = yaml[:default_role_list]
@@ -144,7 +143,7 @@ class HypervisorGce < Hypervisor
     unless ssh_wait.empty?
       puts "Waiting ssh for all vms"
       ssh_wait.each do |user, vm|
-        puts "Waiting #{vm.name}, #{public_ip(vm)}"
+        puts "Waiting #{vm.name}, #{user}@#{public_ip(vm)}"
         wait_ssh public_ip(vm), user, 90
       end
     end
@@ -155,14 +154,13 @@ class HypervisorGce < Hypervisor
     return unless no_dry
     to_be_wait = []
     disk_to_delete = []
-    connection.servers.each do |x|
-      l.each do |name, vm|
-        if x.name == name
-          puts "Deleting #{name}"
-          x.destroy
-          disk_to_delete << name
-          to_be_wait << x
-        end
+    l.each do |name, vm|
+      gce_server = @connection.servers.get(name)
+      if gce_server.name == name
+        puts "Deleting #{name}"
+        gce_server.destroy
+        disk_to_delete << name
+        to_be_wait << gce_server
       end
     end
     while true
@@ -180,17 +178,45 @@ class HypervisorGce < Hypervisor
       sleep 5
     end
     disk_to_delete.each do |dname|
+      puts "Deleting disk : #{dname}"
       connection.disks.find {|disk| disk.name == dname }.destroy
+      puts "Deleted disk : #{dname}"
+    end
+  end
+
+  def start_vms l, no_dry
+    return unless no_dry
+    l.each do |name, vm|
+      puts "Starting #{name}"
+      @connection.servers.get(name).start
+    end
+  end
+
+  def stop_vms l, no_dry
+    return unless no_dry
+    l.each do |name, vm|
+      puts "Stoping #{name}"
+      @connection.servers.get(name).stop
+    end
+  end
+
+  def reboot_vms l, no_dry
+    return unless no_dry
+    l.each do |name, vm|
+      puts "Rebooting #{name}"
+      @connection.servers.get(name).reboot
     end
   end
 
   def read_topology env
     res = {}
+
     server_list.each do |x|
       if x.metadata &&  linked_to_env?(x, env)
         n = {
           :public_hostname => x.network_interfaces.first['accessConfigs'].first['natIP'],
           :private_ip => x.network_interfaces.first['networkIP'],
+          :private_dns => "#{x.name.gsub("-#{env}", "")}.#{env}.internal"
         }
         n[:type] = get_metadatas x, "type"
         n[:roles] = JSON.parse(get_metadatas(x, "roles")) if get_metadatas(x, "roles")
@@ -200,6 +226,21 @@ class HypervisorGce < Hypervisor
       end
     end
     res
+  end
+
+  def dns_ips(vms, allow_not_found)
+    result = self.class.extract_dns_ips vms
+    result
+  end
+
+  def self.extract_dns_ips(vms)
+    result = []
+    vms.each do |name, config|
+      config[:host_ips].except(:admin).each do |k, v|
+        result << {:vm_name => name.to_s, :net => k, :dns => v[:hostname], :ip => v[:ip]}
+      end
+    end
+    result
   end
 
   private

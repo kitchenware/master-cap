@@ -76,6 +76,19 @@ Capistrano::Configuration.instance.load do
       upload_to_root f.path, "/opt/master-chef/etc/topology.json"
     end
 
+    task :upload_topology_local, :roles => :linux_chef  do
+      env = check_only_one_env
+      f = Tempfile.new "topology_env"
+      f.write JSON.dump(TOPOLOGY[env])
+      f.close
+      exec_local "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error chef@127.0.0.1 'sudo cp #{f.path} /opt/master-chef/etc/topology.json'"
+    end
+
+    task :exec_local_chef, :roles => :linux_chef  do
+      env = check_only_one_env
+      exec_local "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error chef@127.0.0.1 '/opt/master-chef/bin/master-chef.sh'"
+    end
+
     task :default, :roles => chef_role  do
       upload_topology
       upload_git_tag_override

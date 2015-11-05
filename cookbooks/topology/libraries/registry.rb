@@ -166,7 +166,7 @@ class RegistryMasterCap < Registry
 
     # Process only_XXX options
     if options[:only_local]
-      result.select! { |x| x["hostname"] == node.hostname }
+      result.select! { |x| x["hostname"] == node.hostname || x["hostname"] == node[:topology][node[:topology_node_name]][:topology_hostname]}
       raise "No result for request #{key} with role #{config[:target_role]}, only_local specified" if result.empty?
       raise "Too many result for request #{key}with role #{config[:target_role]}, only_local specified" if result.length > 1
       result = result.first

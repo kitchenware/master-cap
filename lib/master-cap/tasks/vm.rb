@@ -6,7 +6,7 @@ DNS={}
 def create_or_return_hypervisor cap, env, hypervisor_name
   id = "#{env}_#{hypervisor_name}"
   unless HYPERVISORS[id]
-    error "Unknown hypervisor #{hypervisor_name}" unless TOPOLOGY[env][:hypervisors] && TOPOLOGY[env][:hypervisors][hypervisor_name]
+    raise "Unknown hypervisor #{hypervisor_name}" unless TOPOLOGY[env][:hypervisors] && TOPOLOGY[env][:hypervisors][hypervisor_name]
     params = TOPOLOGY[env][:hypervisors][hypervisor_name][:params] || {}
     params[:hypervisor_id] = id
     type = TOPOLOGY[env][:hypervisors][hypervisor_name][:type]

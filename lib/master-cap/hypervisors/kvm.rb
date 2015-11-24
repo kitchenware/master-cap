@@ -55,6 +55,7 @@ class HypervisorKvm < Hypervisor
       pool = vm[:vm][:pool] || "default"
       hugespages = vm[:vm][:disable_hugepages] ? false : true
       ip_config = vm[:host_ips][:internal] || vm[:host_ips][:admin]
+      network_driver = vm[:vm][:network_driver] || 'virtio'
       network_bridge = vm[:vm][:network_bridge]
       network_gateway = vm[:vm][:network_by_bridge] && vm[:vm][:network_by_bridge][network_bridge] && vm[:vm][:network_by_bridge][network_bridge][:network_gateway] ? vm[:vm][:network_by_bridge][network_bridge][:network_gateway] : vm[:vm][:network_gateway]
       network_netmask = vm[:vm][:network_by_bridge] && vm[:vm][:network_by_bridge][network_bridge] && vm[:vm][:network_by_bridge][network_bridge][:network_netmask] ? vm[:vm][:network_by_bridge][network_bridge][:network_netmask] : vm[:vm][:network_netmask]
@@ -180,7 +181,7 @@ xml = <<-EOF
     <controller type='usb' index='0'/>
     <interface type='bridge'>
       <source bridge='#{network_bridge}'/>
-      <model type='virtio'/>
+      <model type='#{network_driver}'/>
     </interface>
     <serial type='pty'>
       <target port='0'/>

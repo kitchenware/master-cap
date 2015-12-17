@@ -60,6 +60,7 @@ class HypervisorKvm < Hypervisor
       network_gateway = vm[:vm][:network_by_bridge] && vm[:vm][:network_by_bridge][network_bridge] && vm[:vm][:network_by_bridge][network_bridge][:network_gateway] ? vm[:vm][:network_by_bridge][network_bridge][:network_gateway] : vm[:vm][:network_gateway]
       network_netmask = vm[:vm][:network_by_bridge] && vm[:vm][:network_by_bridge][network_bridge] && vm[:vm][:network_by_bridge][network_bridge][:network_netmask] ? vm[:vm][:network_by_bridge][network_bridge][:network_netmask] : vm[:vm][:network_netmask]
       network_dns = vm[:vm][:network_dns] || network_gateway
+      disable_gso = vm[:vm][:disable_gso]
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
 
       @ssh.exec("virsh pool-refresh #{pool}")
@@ -147,7 +148,8 @@ iface eth0 inet static
   netmask #{network_netmask}
 EOF
 
-      iface += "  gateway #{network_gateway}" if network_gateway
+      iface += "  gateway #{network_gateway}\n" if network_gateway
+      iface += "  post-up /sbin/ethtool -K eth0 tx off sg off tso off gso off gro off\n" if disable_gso
 
       memory = vm[:vm][:memory] || 1024
       cpu = vm[:vm][:cpu] || 1
@@ -237,6 +239,7 @@ EOF
       current_keys = @ssh.capture "cat #{tmp_dir}/home/#{user}/.ssh/authorized_keys || true"
       @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", (current_keys.split("\n") + ssh_keys).uniq.join("\n")
       @ssh.exec "chroot #{tmp_dir} which sudo > /dev/null || sudo chroot #{tmp_dir} apt-get install sudo -y"
+      @ssh.exec "chroot #{tmp_dir} which ethtool > /dev/null || sudo chroot #{tmp_dir} apt-get install ethtool -y" if disable_gso
       @ssh.exec "cat #{tmp_dir}/etc/sudoers | grep \"^#{user}\" > /dev/null || echo '#{user}   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a #{tmp_dir}/etc/sudoers > /dev/null"
 
       @ssh.exec "chroot #{tmp_dir} which curl > /dev/null || sudo chroot #{tmp_dir} apt-get install curl -y"

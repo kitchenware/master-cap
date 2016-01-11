@@ -99,3 +99,8 @@ if node.master_cap_kvm.allow_chef_to_use_virsh
   end
 
 end
+
+execute "patch libvirt-guests for parallel shutdown" do
+  command "sed -i 's/^.*PARALLEL_SHUTDOWN.*$/PARALLEL_SHUTDOWN=#{node.master_cap_kvm.parallel_shutdown}/' /etc/default/libvirt-guests "
+  not_if "cat /etc/default/libvirt-guests | grep PARALLEL_SHUTDOWN | grep #{node.master_cap_kvm.parallel_shutdown}"
+end

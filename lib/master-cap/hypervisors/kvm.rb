@@ -168,9 +168,7 @@ xml = <<-EOF
     <apic/>
     <pae/>
   </features>
-  <cpu mode='custom' match='exact'>
-    <model fallback='allow'>SandyBridge</model>
-    <vendor>Intel</vendor>
+  <cpu mode='host-model'>
   </cpu>
   <clock offset='utc'/>
   <on_poweroff>destroy</on_poweroff>

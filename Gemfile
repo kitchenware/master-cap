@@ -1,3 +1,5 @@
-source 'https://rubygems.org/'
+source 'http://rubygems.org'
 
-gemspec
+gem 'test-unit'
+gem 'rake'
+gem 'foodcritic'

@@ -35,10 +35,10 @@ if node[:topology_node_name]
   end
 end
 
-if node[:role_override]
+if node[:roles_override]
   node.roles.each do |role|
-    if node[:role_override][role]
-      node[:role_override][role].to_hash.each do |k, v|
+    if node[:roles_override][role]
+      node[:roles_override][role].to_hash.each do |k, v|
         if v.is_a? Mash
           node.override[k] = (node[k] || {}).to_hash.deep_merge(v)
         else

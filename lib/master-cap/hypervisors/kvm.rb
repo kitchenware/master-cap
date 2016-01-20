@@ -6,6 +6,8 @@ class HypervisorKvm < Hypervisor
 
   include SshHelper
 
+  attr_reader :ssh
+
   def initialize cap, params
     super(cap, params)
     @params = params

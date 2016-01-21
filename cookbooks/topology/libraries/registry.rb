@@ -86,9 +86,9 @@ class RegistryMasterCap < Registry
       begin
         case config[:type].to_sym
           when :interpolated
-            if options[:only_one]
-              result << {"uri" => eval('"' + config[:string] + '"'), "layer" => LAYER_STANDARD}
-            end
+            config[:array] = [config[:string]] unless config[:array]
+            result += config[:array].map{|x| {"uri" => eval('"' + x + '"'), "layer" => LAYER_STANDARD}}
+            p result
           when :mysql
             load_extensions LocalStorage
             load_extensions MysqlHelper
@@ -153,10 +153,7 @@ class RegistryMasterCap < Registry
     end
     result = recurse_parse_uri result
     if result.size > 1
-      result.each do |x|
-        raise "Missing hostname field in #{x.inspect}" unless x["hostname"]
-      end
-      result = result.sort_by { |x| x["hostname"] }
+      result = result.sort_by { |x| key = x["hostname"] || x["uri"]; raise "No key for sorting" unless key; key }
     end
 
     # Process layering: only keep the results with higher-layer results which is under the max_layer

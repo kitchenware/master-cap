@@ -292,7 +292,7 @@ EOF
 <disk type='file' device='disk'>
   <driver name='qemu' type='qcow2'/>
   <source file='#{d}'/>
-  <target dev='#{device}' bus='virtio'/>
+  <target dev='#{device}' bus='virtio' cache='none'/>
 </disk>
 EOF
             @ssh.scp "/tmp/virsh_disk.xml", disk

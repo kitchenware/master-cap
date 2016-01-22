@@ -2,7 +2,7 @@
 package "qemu-kvm"
 package "libvirt-bin"
 
-include_recipe "master_cap_lxc::ksm"
+include_recipe "master_cap_lxc::ksm" if node.master_cap_kvm.ksm
 
 unless node.master_cap_kvm.hugepages == "disable"
 

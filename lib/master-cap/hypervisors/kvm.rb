@@ -80,7 +80,7 @@ class HypervisorKvm < Hypervisor
 
       disks = <<-EOF
 <disk type='file' device='disk'>
-  <driver name='qemu' type='qcow2'/>
+  <driver name='qemu' type='qcow2' cache='none'/>
   <source file='#{root_disk}'/>
   <target dev='vda' bus='virtio'/>
 </disk>
@@ -104,7 +104,7 @@ EOF
           d = d.match(/<path>(.*)<\/path>/)[1]
           disks += <<-EOF
 <disk type='file' device='disk'>
-  <driver name='qemu' type='qcow2'/>
+  <driver name='qemu' type='qcow2' cache='none'/>
   <source file='#{d}'/>
   <target dev='#{device}' bus='virtio'/>
 </disk>
@@ -128,7 +128,7 @@ EOF
           puts "Adding #{disk_name} : #{v[:dev]}"
           disks += <<-EOF
 <disk type='block' device='disk'>
-  <driver name='qemu' type='raw'/>
+  <driver name='qemu' type='raw' cache='none'/>
   <source dev='#{v[:dev]}'/>
   <target dev='#{disk_name}' bus='virtio'/>
 </disk>

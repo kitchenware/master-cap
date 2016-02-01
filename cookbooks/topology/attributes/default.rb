@@ -27,9 +27,9 @@ if node[:topology_node_name]
   if node_config && node_config[:node_override]
     node_config[:node_override].to_hash.each do |k, v|
       if v.is_a? Mash
-        node.override[k] = (node[k] || {}).to_hash.deep_merge(v)
+        node.force_override[k] = (node[k] || {}).to_hash.deep_merge(v)
       else
-        node.override[k] = v
+        node.force_override[k] = v
       end
     end
   end
@@ -40,9 +40,9 @@ if node[:roles_override]
     if node[:roles_override][role]
       node[:roles_override][role].to_hash.each do |k, v|
         if v.is_a? Mash
-          node.override[k] = (node[k] || {}).to_hash.deep_merge(v)
+          node.force_override[k] = (node[k] || {}).to_hash.deep_merge(v)
         else
-          node.override[k] = v
+          node.force_override[k] = v
         end
       end
     end

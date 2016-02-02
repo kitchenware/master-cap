@@ -55,7 +55,7 @@ class DnsDnsmasqShell < BaseDns
 
   def check_zone name, data, no_dry
     @ssh.scp "/tmp/toto", build(name, data)
-    @ssh.exec "diff -du /tmp/toto #{file(name)} || true"
+    @ssh.exec "diff -du #{file(name)} /tmp/toto || true"
     if no_dry
       puts "Using new zone file for #{name}"
       @ssh.exec "mv /tmp/toto #{file(name)}"

@@ -267,6 +267,12 @@ Capistrano::Configuration.instance.load do
         end
       end
 
+      task :check do
+        each_dns do |env, dns|
+          dns.check get_existing(env), exists?(:no_dry)
+        end
+      end
+
     end
 
   end

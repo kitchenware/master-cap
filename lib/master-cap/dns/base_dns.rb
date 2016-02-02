@@ -65,4 +65,11 @@ class BaseDns
     end
   end
 
+  def check list, no_dry
+    run list, no_dry do |real_zone_name, current, l|
+      check_zone real_zone_name, l, no_dry
+      true
+    end
+  end
+
 end

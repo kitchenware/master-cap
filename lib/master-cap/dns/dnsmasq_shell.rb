@@ -45,17 +45,34 @@ class DnsDnsmasqShell < BaseDns
   end
 
   def save name, data
-    ips = data.map{|x| x[:ip]}.uniq
-    lines = []
-    ips.sort.each do |ip|
-      lines << "#{ip} #{data.select{|x| x[:ip] == ip}.map{|x| x[:name]}.join(' ')}"
-    end
-    @ssh.scp file(name), lines.join("\n")
+    @ssh.scp file(name), build(name, data)
   end
 
   def reload name
     @ssh.exec "pkill -HUP dnsmasq"
     puts "Dnsmasq updated on #{@params[:host]} for zone #{name}"
+  end
+
+  def check_zone name, data, no_dry
+    @ssh.scp "/tmp/toto", build(name, data)
+    @ssh.exec "diff -du /tmp/toto #{file(name)} || true"
+    if no_dry
+      puts "Using new zone file for #{name}"
+      @ssh.exec "mv /tmp/toto #{file(name)}"
+    else
+      @ssh.exec "rm /tmp/toto"
+    end
+  end
+
+  private
+
+  def build name, data
+    ips = data.map{|x| x[:ip]}.uniq
+    lines = []
+    ips.sort.each do |ip|
+      lines << "#{ip} #{data.select{|x| x[:ip] == ip}.map{|x| x[:name]}.join(' ')}"
+    end
+    lines.join("\n")
   end
 
 end

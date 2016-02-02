@@ -290,9 +290,9 @@ EOF
             d = d.match(/<path>(.*)<\/path>/)[1]
             disk = <<-EOF
 <disk type='file' device='disk'>
-  <driver name='qemu' type='qcow2'/>
+  <driver name='qemu' type='qcow2' cache='none'/>
   <source file='#{d}'/>
-  <target dev='#{device}' bus='virtio' cache='none'/>
+  <target dev='#{device}' bus='virtio'/>
 </disk>
 EOF
             @ssh.scp "/tmp/virsh_disk.xml", disk

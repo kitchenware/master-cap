@@ -7,7 +7,12 @@ Capistrano::Configuration.instance.load do
   namespace :chef do
 
     set :master_chef_path, fetch(:master_chef_path, '../master-chef')
-    set :git_repos_manager, Object.const_get(fetch(:git_repos_manager_class, 'EmptyGitReposManager')).new(self)
+
+    def repos node = nil
+      repo_manager = Object.const_get(fetch(:git_repos_manager_class, 'EmptyGitReposManager')).new(self)
+      repo_manager.inject_custom_repos(node[:repos]) if node && node[:repos] && repo_manager.respond_to?(:inject_custom_repos)
+      repo_manager
+    end
 
     task :generate_local_json do
       env = check_only_one_env
@@ -21,8 +26,7 @@ Capistrano::Configuration.instance.load do
           roles += node[:roles] if node[:roles]
           recipes += node[:recipes] if node[:recipes]
         end
-        git_repos = git_repos_manager.list
-        git_repos += node[:git_repos] if node[:git_repos]
+        git_repos = repos(node).list
         json = JSON.pretty_generate({
           :repos => {
             :git => git_repos,
@@ -37,10 +41,10 @@ Capistrano::Configuration.instance.load do
         f.write json
         f.close
         upload_to_root f.path, "/opt/master-chef/etc/local.json", {:hosts => [s]}
-      end
-      git_repos_manager.list.each do |git_repo|
-        if git_repo =~ /^.+@.+:.+\.git$/
-          run "sudo ssh -o StrictHostKeyChecking=no #{git_repo.split(':')[0]} echo toto > /dev/null 2>&1 || true ", :roles => chef_role
+        git_repos.each do |git_repo|
+          if git_repo =~ /^.+@.+:.+\.git$/
+            run "sudo ssh -o StrictHostKeyChecking=no #{git_repo.split(':')[0]} echo toto > /dev/null 2>&1 || true ", {:hosts => [s]}
+          end
         end
       end
     end
@@ -55,7 +59,7 @@ Capistrano::Configuration.instance.load do
     task :upload_git_tag_override, :roles => :linux_chef do
       env = check_only_one_env
 
-      git_tag_override = git_repos_manager.compute_override(env)
+      git_tag_override = repos.compute_override(env)
 
       if git_tag_override
         f = Tempfile.new File.basename("git_tag_override")
@@ -118,11 +122,11 @@ Capistrano::Configuration.instance.load do
 
     task :local, :roles => chef_role  do
       upload_topology
-      find_servers(:roles => chef_role).each do |x|
+      find_nodes(:roles => chef_role).each do |env, node, s|
         prefix = ""
         prefix += get_prefix
         prefix += "PROXY_COMMAND='#{ssh_options[:proxy].command_line_template}' " if exists?(:ssh_options) && ssh_options[:proxy]
-        command = "sh -c \"#{prefix} #{master_chef_path}/runtime/chef_local.rb #{x} #{git_repos_manager.compute_local_path}\""
+        command = "sh -c \"#{prefix} #{master_chef_path}/runtime/chef_local.rb #{s.host} #{repos(node).compute_local_path}\""
         abort unless system command
       end
     end

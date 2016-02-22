@@ -3,6 +3,11 @@ class SimpleGitReposManager
 
   def initialize cap
     @cap = cap
+    @custom_repos = []
+  end
+
+  def inject_custom_repos repos
+    @custom_repos = repos
   end
 
   def compute_override env
@@ -28,6 +33,6 @@ class SimpleGitReposManager
   private
 
   def repos
-    @cap.fetch(:git_repos, [])
+    @cap.fetch(:git_repos, []) + @custom_repos
   end
 end

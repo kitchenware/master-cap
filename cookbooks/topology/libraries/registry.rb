@@ -88,7 +88,6 @@ class RegistryMasterCap < Registry
           when :interpolated
             config[:array] = [config[:string]] unless config[:array]
             result += config[:array].map{|x| {"uri" => eval('"' + x + '"'), "layer" => LAYER_STANDARD}}
-            p result
           when :mysql
             load_extensions LocalStorage
             load_extensions MysqlHelper

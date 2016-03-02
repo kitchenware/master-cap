@@ -43,6 +43,9 @@ Capistrano::Configuration.instance.load do
         upload_to_root f.path, "/opt/master-chef/etc/local.json", {:hosts => [s]}
         git_repos.each do |git_repo|
           if git_repo =~ /^.+@.+:.+\.git$/
+            run "sudo ssh-keygen -R #{git_repo.split(':')[0].split('@').last} -f /root/.ssh/known_hosts || true ", {:hosts => [s]}
+            ip = capture("echo 'require \"resolv\"; puts Resolv.getaddress \"#{git_repo.split(':')[0].split('@').last}\"' | /opt/chef/embedded/bin/ruby", {:hosts => [s]}).strip
+            run "sudo ssh-keygen -R #{ip} -f /root/.ssh/known_hosts || true ", {:hosts => [s]}
             run "sudo ssh -o StrictHostKeyChecking=no #{git_repo.split(':')[0]} echo toto > /dev/null 2>&1 || true ", {:hosts => [s]}
           end
         end

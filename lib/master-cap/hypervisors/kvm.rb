@@ -67,6 +67,9 @@ class HypervisorKvm < Hypervisor
 
       @ssh.exec("virsh pool-refresh #{pool}")
 
+      cache = ''
+      cache = "cache='#{vm[:vm][:virtio_disk_cache]}'" if vm[:vm][:virtio_disk_cache] && vm[:vm][:virtio_disk_cache] != 'default'
+
       unless @ssh.capture("virsh vol-list --pool #{pool} | grep #{name}.qcow2 || true").empty?
         @ssh.exec "virsh vol-delete --pool #{pool} #{name}.qcow2"
       end
@@ -80,7 +83,7 @@ class HypervisorKvm < Hypervisor
 
       disks = <<-EOF
 <disk type='file' device='disk'>
-  <driver name='qemu' type='qcow2' cache='none'/>
+  <driver name='qemu' type='qcow2' #{cache}/>
   <source file='#{root_disk}'/>
   <target dev='vda' bus='virtio'/>
 </disk>
@@ -104,7 +107,7 @@ EOF
           d = d.match(/<path>(.*)<\/path>/)[1]
           disks += <<-EOF
 <disk type='file' device='disk'>
-  <driver name='qemu' type='qcow2' cache='none'/>
+  <driver name='qemu' type='qcow2' #{cache}/>
   <source file='#{d}'/>
   <target dev='#{device}' bus='virtio'/>
 </disk>

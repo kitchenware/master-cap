@@ -242,7 +242,10 @@ EOF
       current_keys = @ssh.capture "cat #{tmp_dir}/home/#{user}/.ssh/authorized_keys || true"
       @ssh.scp "#{tmp_dir}/home/#{user}/.ssh/authorized_keys", (current_keys.split("\n") + ssh_keys).uniq.join("\n")
       @ssh.exec "chroot #{tmp_dir} which sudo > /dev/null || sudo chroot #{tmp_dir} apt-get install sudo -y"
-      @ssh.exec "chroot #{tmp_dir} which ethtool > /dev/null || sudo chroot #{tmp_dir} apt-get install ethtool -y" if disable_gso
+      if disable_gso
+        @ssh.exec "chroot #{tmp_dir} which ethtool > /dev/null || sudo chroot #{tmp_dir} apt-get update"
+        @ssh.exec "chroot #{tmp_dir} which ethtool > /dev/null || sudo chroot #{tmp_dir} apt-get install ethtool -y"
+      end
       @ssh.exec "cat #{tmp_dir}/etc/sudoers | grep \"^#{user}\" > /dev/null || echo '#{user}   ALL=(ALL) NOPASSWD:ALL' | sudo tee -a #{tmp_dir}/etc/sudoers > /dev/null"
 
       @ssh.exec "chroot #{tmp_dir} which curl > /dev/null || sudo chroot #{tmp_dir} apt-get install curl -y"

@@ -63,6 +63,7 @@ class HypervisorKvm < Hypervisor
       network_netmask = vm[:vm][:network_by_bridge] && vm[:vm][:network_by_bridge][network_bridge] && vm[:vm][:network_by_bridge][network_bridge][:network_netmask] ? vm[:vm][:network_by_bridge][network_bridge][:network_netmask] : vm[:vm][:network_netmask]
       network_dns = vm[:vm][:network_dns] || network_gateway
       disable_gso = vm[:vm][:disable_gso]
+      post_up_commands = vm[:vm][:post_up_commands]
       puts "Network config for #{name} : #{ip_config[:ip]} / #{network_netmask}, gateway #{network_gateway}, bridge #{network_bridge}, dns #{network_dns}"
 
       @ssh.exec("virsh pool-refresh #{pool}")
@@ -155,6 +156,7 @@ EOF
 
       iface += "  gateway #{network_gateway}\n" if network_gateway
       iface += "  post-up /sbin/ethtool -K eth0 tx off sg off tso off gso off gro off\n" if disable_gso
+      iface += post_up_commands.map{|x| "  post-up #{x}"}.join("\n") if post_up_commands
 
       memory = vm[:vm][:memory] || 1024
       cpu = vm[:vm][:cpu] || 1

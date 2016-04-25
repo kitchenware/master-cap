@@ -12,6 +12,11 @@ Capistrano::Configuration.instance.load do
               l.each do |x|
                 block.call [x]
               end
+            elsif exists? :run_batch
+              batch_size = fetch(:run_batch)
+              l.each_slice(batch_size) do |l2|
+                block.call l2
+              end
             else
               block.call l
             end

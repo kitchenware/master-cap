@@ -116,14 +116,15 @@ class RegistryMasterCap < Registry
             load_extensions PostgresqlHelper
             postgresql_conf = postgresql_config(config[:id].to_s)
             topology_nodes = find_using_topology(config[:target_role], config[:ip_type], max_layer, options[:only_ip])
+            port = config[:target_port] || 5432
             if postgresql_conf[:database]
               topology_nodes.each do |topology_node|
                 topology_node["id"] = config[:id]
-                topology_node["uri"] = "postgresql://#{encode(postgresql_conf[:username])}:#{encode(postgresql_conf[:password])}@#{topology_node["ip"]}:5432/#{postgresql_conf[:database]}"
+                topology_node["uri"] = "postgresql://#{encode(postgresql_conf[:username])}:#{encode(postgresql_conf[:password])}@#{topology_node["ip"]}:#{port}/#{postgresql_conf[:database]}"
               end
             else
               topology_nodes.each do |topology_node|
-                uri = "postgresql://#{topology_node["ip"]}:5432"
+                uri = "postgresql://#{topology_node["ip"]}:#{port}"
                 topology_node['id'] = config[:id]
                 topology_node['uri'] = uri
               end

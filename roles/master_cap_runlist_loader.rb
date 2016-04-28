@@ -11,6 +11,7 @@ if File.exist?(topology_file) && ENV['MASTER_CHEF_CONFIG'] && File.exist?(ENV['M
   local = JSON.parse(File.read(ENV['MASTER_CHEF_CONFIG']), :symbolize_names => true)
   if local[:node_config] && local[:node_config][:topology_node_name]
     topology_node_name = local[:node_config][:topology_node_name].to_sym
+    ENV['TOPOLOGY_ENV'] = local[:node_config][:env] if local[:node_config][:env]
     if topology[:topology] && topology[:topology][topology_node_name]
       local_node_config = topology[:topology][topology_node_name]
       local_run_list = []

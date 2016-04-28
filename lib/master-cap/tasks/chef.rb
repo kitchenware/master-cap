@@ -33,7 +33,8 @@ Capistrano::Configuration.instance.load do
           },
           :run_list => roles.map{|x| "role[#{x}]"} + recipes.map{|x| "recipe[#{x}]"},
           :node_config => {
-            :topology_node_name => node[:topology_name]
+            :topology_node_name => node[:topology_name],
+            :env => env,
           },
         })
         puts json

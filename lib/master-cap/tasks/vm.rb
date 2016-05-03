@@ -83,18 +83,23 @@ Capistrano::Configuration.instance.load do
     end
 
     def hyp_list
-      hypervisors = []
+      hypervisors = {}
       find_servers(:roles => :linux_chef).each do |s|
         env, node = find_node s.host
+        hostname = s.host
         hypervisor_name = hyp_for_vm env, node, s
         next if no_hyp? hypervisor_name
-        hypervisors << hypervisor_name unless hypervisors.include? hypervisor_name
+        hypervisors[hypervisor_name] ||= []
+        hypervisors[hypervisor_name] << hostname
       end
-      hypervisors.sort
+      hypervisors
     end
 
     task :list_hyp do
-      puts hyp_list
+      hypervisors = hyp_list
+      hypervisors.keys.sort.each do |k|
+        puts "#{k} : #{hypervisors[k].sort.join(" ")}"
+      end
     end
 
     task :list_vms do

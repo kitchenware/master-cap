@@ -224,6 +224,7 @@ EOF
       @ssh.exec "umount /dev/nbd0p1 > /dev/null 2>&1 || true"
       @ssh.exec "qemu-nbd --disconnect /dev/nbd0 > /dev/null 2>&1 || true"
       @ssh.exec "qemu-nbd --connect=/dev/nbd0 #{root_disk}"
+      @ssh.exec "partx -a /dev/nbd0"
       @ssh.exec "mount /dev/nbd0p1 #{tmp_dir}"
       @ssh.exec "sh -c 'rm -f #{tmp_dir}/etc/ssh/ssh_host*key*'"
       @ssh.exec "ssh-keygen -t rsa -f #{tmp_dir}/etc/ssh/ssh_host_rsa_key -C root@#{name} -N '' -q "

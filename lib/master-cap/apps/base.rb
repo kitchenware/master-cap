@@ -54,11 +54,17 @@ class AppsBase
     env = @cap.check_only_one_env
     topology = get_topology(config[:finder])
     return if topology.keys.empty? && cap.exists?(:allow_no_apps_deploy)
+    o = default_opts
+    if opts[:topology_callback]
+      topology = opts[:topology_callback].call env, topology, o
+      return if topology.keys.empty?
+      opts.delete :topology_callback
+    end
     f = Tempfile.new File.basename("sub_cap")
     f.write JSON.dump(topology)
     f.close
     files_to_load = config[:cap_files_to_load] || []
-    params = opts.merge(default_opts).map{|k, v| "-s #{k}='#{v}'"}.join(" ")
+    params = opts.merge(o).map{|k, v| "-s #{k}='#{v}'"}.join(" ")
     params += " -S env=#{env}"
     params += " -S http_proxy='#{cap.fetch(:http_proxy)}'" if cap.exists? :http_proxy
     params += " -S no_proxy='#{cap.fetch(:no_proxy)}'" if cap.exists? :no_proxy

@@ -33,7 +33,18 @@ class AppsCapistrano < AppsBase
   end
 
   def deploy
-    run_sub_cap :deploy
+    run_sub_cap :deploy, :topology_callback => Proc.new {|env, topology, opts|
+      if @cap.fetch(:deploy_only_if_needed, false)
+        revisions = @cap.multiple_capture "cat #{config[:app_directory]}/current/REVISION || true", :hosts => topology.keys
+        revisions.each do |k, v|
+          if opts[:branch] == v.strip
+            puts "Skipping deploy to #{k[:hostname]}, already up to date"
+            topology.delete topology.keys.find{|x| x.host == k[:hostname]}
+          end
+        end
+      end
+      topology
+    }
   end
 
   private
